@@ -1,511 +1,666 @@
 /* =========================================================
-   FOOTYQUIZ PRO - 3D LIQUID GLASS PHONE SPECIFICATION
+   FOOTYQUIZ PRO - NEXT-GEN 3D REALISTIC BROADCAST ENGINE
+   EA Sports FC / Champions League Matchday Immersion
    ========================================================= */
 
-@font-face {
-  font-family: "Helvetica Now Var";
-  src: url("https://db.onlinewebfonts.com/t/e66905e07608167a84e6ad52f638c3c6.woff2") format("woff2"),
-       url("https://db.onlinewebfonts.com/t/e66905e07608167a84e6ad52f638c3c6.woff") format("woff");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --font-primary: "Helvetica Now Var", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --pitch-glow: #00f59b;
+  --pitch-dark: #032b1a;
+  --gold-glow: #f59e0b;
+  --gold-foil: linear-gradient(135deg, #fce7a2 0%, #f59e0b 50%, #b45309 100%);
+  --cyan-beam: #06b6d4;
+  --bg-deep: #050811;
+  --card-bg: rgba(10, 16, 32, 0.78);
+  --card-border: rgba(0, 245, 155, 0.25);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: var(--font-primary);
   -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background-color: #0b0f19;
+  background-color: var(--bg-deep);
+  color: #ffffff;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  user-select: none;
+}
+
+/* 3D THREE.JS STADIUM CANVAS (FULLSCREEN BACKGROUND) */
+#three-stadium-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* BROADCAST OVERLAY WRAPPER */
+.broadcast-wrapper {
+  position: relative;
+  z-index: 10;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 20px;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* TOP BROADCAST TICKER & HUD */
+.top-broadcast-hud {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  overflow-x: hidden;
-  position: relative;
-  perspective: 1200px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  background: rgba(6, 11, 24, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Page Background Ambient Lighting */
-.page-bg-ambient {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
 
-.page-bg-ambient .glow-1 {
-  position: absolute;
-  top: -10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(0, 245, 155, 0.18) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
-  filter: blur(80px);
-}
-
-.page-bg-ambient .glow-2 {
-  position: absolute;
-  bottom: 0%;
-  left: 20%;
-  width: 600px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 60%);
-  filter: blur(100px);
-}
-
-/* 3D Phone Perspective Container */
-.phone-perspective-stage {
-  perspective: 1400px;
+.brand-logo-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00f59b 0%, #059669 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 12px;
-  width: 100%;
-  z-index: 10;
+  box-shadow: 0 0 20px rgba(0, 245, 155, 0.4);
 }
 
-/* Realistic Phone Frame Mockup (375px wide x 780px tall) */
-.phone-frame {
-  width: 375px;
-  height: 780px;
-  border-radius: 52px;
-  background-color: #8a9aaa;
+.brand-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.brand-title span {
+  color: #00f59b;
+}
+
+.brand-tag {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 245, 155, 0.2);
+  color: #00f59b;
+  margin-left: 4px;
+  border: 1px solid rgba(0, 245, 155, 0.3);
+}
+
+/* HUD STATS (Timer, Score, Streak) */
+.hud-center-stats {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* 30-Second Shot Clock Radial Ring */
+.shot-clock-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(0, 245, 155, 0.4);
+  box-shadow: 0 0 16px rgba(0, 245, 155, 0.2);
+}
+
+.shot-clock-pill.danger {
+  border-color: #ef4444;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  animation: pulseDanger 0.6s infinite alternate;
+}
+
+@keyframes pulseDanger {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+
+.clock-number {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  color: #00f59b;
+}
+
+.danger .clock-number {
+  color: #ef4444;
+}
+
+/* Live Score & Multiplier Streak */
+.live-score-pill {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.live-score-pill small {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 700;
+}
+
+.streak-flame-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
+  animation: flameGlow 1.2s infinite alternate;
+}
+
+@keyframes flameGlow {
+  0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.2); }
+  100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+}
+
+/* ADDICTIVE MATCHDAY LIFELINES (50:50, Freeze, VAR) */
+.lifelines-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lifeline-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lifeline-btn:hover:not(:disabled) {
+  background: rgba(0, 245, 155, 0.2);
+  border-color: #00f59b;
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(0, 245, 155, 0.3);
+}
+
+.lifeline-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+/* MAIN MATCH ARENA */
+.match-arena-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 880px;
+  width: 100%;
+  margin: 20px auto;
+}
+
+/* QUESTION HERO BOX */
+.question-hero-card {
+  background: linear-gradient(135deg, rgba(8, 16, 32, 0.88) 0%, rgba(5, 10, 22, 0.94) 100%);
+  border-radius: 28px;
+  border: 1.5px solid rgba(0, 245, 155, 0.3);
+  padding: 26px 32px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 245, 155, 0.1);
+  backdrop-filter: blur(20px);
+  margin-bottom: 22px;
   position: relative;
   overflow: hidden;
-  box-shadow: 
-    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 0 0 10px #1a1a1e,
-    0 0 0 11px rgba(255, 255, 255, 0.06),
-    0 0 60px rgba(0, 0, 0, 0.5);
-  transition: transform 0.12s ease-out, box-shadow 0.25s ease;
+}
+
+.question-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00f59b, #38bdf8, transparent);
+}
+
+.meta-tags-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.competition-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #00f59b;
+}
+
+.tier-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(0, 245, 155, 0.15);
+  border: 1px solid rgba(0, 245, 155, 0.3);
+  color: #00f59b;
+}
+
+.question-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.35;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+@media (min-width: 768px) {
+  .question-title {
+    font-size: 26px;
+  }
+}
+
+/* 4 HOLOGRAPHIC 3D CARDS GRID */
+.cards-3d-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .cards-3d-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* INDIVIDUAL 3D CARD */
+.hologram-option-card {
+  position: relative;
+  background: linear-gradient(145deg, rgba(14, 23, 44, 0.85) 0%, rgba(9, 15, 30, 0.92) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
   transform-style: preserve-3d;
   will-change: transform;
 }
 
-/* 3D Glare Reflection across Glass */
-.phone-glare-reflection {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 52px;
-  z-index: 45;
-  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%);
-  mix-blend-mode: overlay;
-  transition: opacity 0.3s ease;
+.hologram-option-card:hover:not(:disabled) {
+  border-color: #00f59b;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(0, 245, 155, 0.3);
 }
 
-/* Full-Bleed Background inside Phone */
-.phone-bg-bleed {
-  position: absolute;
-  inset: 0;
-  background-image: url('https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260704_143500_a76b8e64-2c69-4683-80e7-2bb060a921d6.png&w=1280&q=85'),
-                    radial-gradient(circle at 50% 30%, #1e3a4c 0%, #0d1a26 100%);
-  background-size: cover;
-  background-position: center;
-  filter: blur(12px);
-  transform: scale(1.1);
-  z-index: 1;
+.hologram-option-card:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
 }
 
-.phone-bg-overlay {
-  position: absolute;
-  inset: 0;
-  background-color: #8a9aaa;
-  opacity: 0.30;
-  z-index: 2;
-}
-
-/* Black Pill-Shaped Dynamic Island (120px wide, 32px tall) */
-.dynamic-island {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 32px;
-  border-radius: 9999px;
-  background-color: #000000;
-  z-index: 50;
+/* Card Number Pill [1], [2], [3], [4] */
+.card-key-pill {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-  user-select: none;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-.dynamic-island:hover {
-  width: 160px;
+.hologram-option-card:hover:not(:disabled) .card-key-pill {
+  background: rgba(0, 245, 155, 0.2);
+  border-color: #00f59b;
+  color: #00f59b;
 }
 
-.dynamic-island.expanded {
-  width: 320px;
-  height: 84px;
-  border-radius: 28px;
-  padding: 14px 18px;
-}
-
-/* Three.js 3D Floating Soccer Ball Canvas */
-#three-canvas-container {
-  position: absolute;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 120px;
-  z-index: 15;
-  pointer-events: none;
-}
-
-/* Phone Screen Content Layout */
-.phone-content {
-  position: relative;
-  z-index: 10;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 56px 24px 24px 24px;
+.card-answer-text {
+  font-size: 15px;
+  font-weight: 600;
   color: #ffffff;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Hide scrollbar for clean device appearance */
-.phone-content::-webkit-scrollbar {
-  display: none;
-}
-.phone-content {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* 1. Header Badge Pill */
-.header-badge-pill {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 9999px;
-  margin-bottom: 24px;
-  cursor: pointer;
-}
-
-/* 2. Title Section */
-.title-section {
-  margin-bottom: 24px;
-}
-
-.quiz-subtitle {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 400;
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
-}
-
-.quiz-heading {
-  color: #ffffff;
-  font-size: 24px;
-  font-weight: 500;
-  line-height: 1.25;
-  letter-spacing: -0.03em;
-  min-height: 58px;
-}
-
-/* 3. Selection Grid (2 columns, 12px gap) */
-.selection-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  line-height: 1.3;
   flex: 1;
-  align-content: start;
 }
 
-/* Selection Cards (rounded-[32px], 100px height, padding 16px) */
-.quiz-card {
-  height: 102px;
-  border-radius: 32px;
-  padding: 16px;
+/* CORRECT GOAL REVEAL */
+.hologram-option-card.correct {
+  background: linear-gradient(135deg, rgba(0, 245, 155, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%) !important;
+  border-color: #00f59b !important;
+  box-shadow: 0 0 35px rgba(0, 245, 155, 0.6) !important;
+  transform: scale(1.03) !important;
+}
+
+.hologram-option-card.correct .card-key-pill {
+  background: #00f59b !important;
+  color: #000000 !important;
+  border-color: #00f59b !important;
+}
+
+/* WRONG OFF-TARGET REVEAL */
+.hologram-option-card.wrong {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(185, 28, 28, 0.35) 100%) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.5) !important;
+}
+
+.hologram-option-card.wrong .card-key-pill {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+}
+
+/* DIMMED WHEN LOCKED */
+.hologram-option-card.dimmed {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* ELIMINATED BY 50:50 */
+.hologram-option-card.eliminated {
+  opacity: 0.15;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+/* MATCH FACT COMMENTARY DRAWER */
+.commentary-drawer {
+  background: linear-gradient(135deg, rgba(8, 15, 30, 0.95) 0%, rgba(4, 8, 18, 0.98) 100%);
+  border: 1.5px solid rgba(0, 245, 155, 0.35);
+  border-radius: 22px;
+  padding: 20px 24px;
+  margin-top: 18px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+  display: none;
+  animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.commentary-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: space-between;
-  text-align: left;
-  user-select: none;
+  margin-bottom: 8px;
+}
+
+.commentary-callout {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.commentary-pts {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: #00f59b;
+}
+
+.commentary-text {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.next-action-btn {
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #00f59b 0%, #059669 100%);
+  color: #032b1a;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  border: none;
   cursor: pointer;
-  outline: none;
-  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 0 25px rgba(0, 245, 155, 0.4);
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-.quiz-card-number {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.quiz-card-text {
-  color: #ffffff;
-  font-size: 14.5px;
-  font-weight: 500;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+.next-action-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
 }
 
 /* =========================================================
-   LIQUID GLASS CSS SPECIFICATION (Exact Mask-Composite Exclude)
+   EA SPORTS FC / FUT ULTIMATE TEAM 3D ICON CARD (END SCREEN)
    ========================================================= */
-
-.liquid-glass {
-  background: rgba(255, 255, 255, 0.01);
-  background-blend-mode: luminosity;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
-  position: relative;
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.liquid-glass::before {
-  content: '';
-  position: absolute;
+.fut-card-modal {
+  position: fixed;
   inset: 0;
-  border-radius: inherit;
-  padding: 1.4px;
-  background: linear-gradient(
-    180deg, 
-    rgba(255, 255, 255, 0.45) 0%, 
-    rgba(255, 255, 255, 0.15) 20%, 
-    rgba(255, 255, 255, 0) 40%, 
-    rgba(255, 255, 255, 0) 60%, 
-    rgba(255, 255, 255, 0.15) 80%, 
-    rgba(255, 255, 255, 0.45) 100%
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  background: rgba(3, 6, 14, 0.92);
+  backdrop-filter: blur(24px);
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-.liquid-glass-selected {
-  background: rgba(255, 255, 255, 0.12) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  transform: translateY(-2px) scale(1.02);
-}
-
-.liquid-glass-selected::before {
-  background: linear-gradient(
-    180deg, 
-    rgba(255, 255, 255, 0.6) 0%, 
-    rgba(255, 255, 255, 0.25) 20%, 
-    rgba(255, 255, 255, 0) 40%, 
-    rgba(255, 255, 255, 0) 60%, 
-    rgba(255, 255, 255, 0.25) 80%, 
-    rgba(255, 255, 255, 0.6) 100%
-  ) !important;
-}
-
-/* Liquid Glass Correct (Emerald Glow) */
-.liquid-glass-correct {
-  background: rgba(16, 185, 129, 0.25) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 0 24px rgba(16, 185, 129, 0.4) !important;
-}
-.liquid-glass-correct::before {
-  background: linear-gradient(180deg, rgba(52, 211, 153, 0.9) 0%, rgba(16, 185, 129, 0.4) 100%) !important;
-}
-
-/* Liquid Glass Wrong (Red Rose Glow) */
-.liquid-glass-wrong {
-  background: rgba(239, 68, 68, 0.25) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 0 20px rgba(239, 68, 68, 0.35) !important;
-}
-.liquid-glass-wrong::before {
-  background: linear-gradient(180deg, rgba(248, 113, 113, 0.9) 0%, rgba(239, 68, 68, 0.4) 100%) !important;
-}
-
-/* 4. Voice / Stadium Sound Button */
-.voice-button-wrapper {
+.fut-card-container {
+  max-width: 440px;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin: 18px 0;
+  text-align: center;
+}
+
+/* 3D TILT FUT CARD FRAME */
+.fut-icon-card {
+  width: 320px;
+  height: 480px;
+  border-radius: 36px;
+  background: linear-gradient(145deg, #fce7a2 0%, #f59e0b 35%, #b45309 70%, #78350f 100%);
+  padding: 4px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 50px rgba(245, 158, 11, 0.4);
   position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out;
+  margin-bottom: 20px;
 }
 
-.voice-radial-glow {
+/* Holographic Shimmer Foil */
+.fut-icon-card::after {
+  content: '';
   position: absolute;
-  width: 140px;
-  height: 140px;
-  border-radius: 9999px;
-  background: radial-gradient(ellipse at center, rgba(220, 200, 80, 0.5) 0%, rgba(180, 160, 40, 0.2) 40%, transparent 70%);
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 30%,
+    transparent 60%
+  );
   pointer-events: none;
-  z-index: 1;
+  mix-blend-mode: overlay;
 }
 
-.voice-btn-circle {
-  width: 64px;
-  height: 64px;
-  border-radius: 9999px;
+.fut-card-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 32px;
+  background: linear-gradient(180deg, #181d2c 0%, #0d121f 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  position: relative;
+  z-index: 2;
+}
+
+.fut-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.fut-ovr-box {
+  text-align: left;
+}
+
+.fut-ovr-number {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 52px;
+  line-height: 1;
+  color: #fce7a2;
+  text-shadow: 0 0 15px rgba(252, 231, 162, 0.5);
+}
+
+.fut-pos {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: #f59e0b;
+}
+
+.fut-club-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  z-index: 2;
-  cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  font-size: 24px;
 }
 
-.voice-btn-circle:hover {
-  transform: scale(1.06);
+.fut-player-title {
+  margin: 16px 0 6px 0;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.voice-btn-circle:active {
-  transform: scale(0.96);
-}
-
-.voice-label {
-  color: rgba(255, 255, 255, 0.7);
+.fut-rank-title {
   font-size: 12px;
-  font-weight: 500;
-  margin-top: 6px;
-  position: relative;
-  z-index: 2;
+  font-weight: 700;
+  color: #f59e0b;
   letter-spacing: 0.02em;
 }
 
-/* 5. Slide-to-Confirm & Quick Confirm Button */
-.slide-track {
-  width: 100%;
-  height: 56px;
-  border-radius: 9999px;
-  position: relative;
+/* STATS RADAR GRID */
+.fut-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 14px;
+  text-align: left;
+}
+
+.fut-stat-item {
   display: flex;
   align-items: center;
-  padding: 0 6px;
-  cursor: pointer;
-  user-select: none;
-  overflow: hidden;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.slide-thumb {
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  background-color: #ffffff;
+.fut-stat-num {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  color: #fce7a2;
+}
+
+/* FOOTER CONTROLS */
+.broadcast-footer {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: absolute;
-  left: 6px;
-  top: 6px;
-  z-index: 10;
-  cursor: grab;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-  touch-action: none;
-  transition: box-shadow 0.2s ease;
-}
-
-.slide-thumb:active {
-  cursor: grabbing;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
-}
-
-.slide-text {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
-  font-weight: 500;
-  width: 100%;
-  text-align: center;
-  pointer-events: none;
-  letter-spacing: -0.01em;
-}
-
-.slide-chevrons {
-  position: absolute;
-  right: 18px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  pointer-events: none;
-}
-
-/* Staggered Fade Up Animations */
-@keyframes fadeUpAnim {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.anim-fade-up {
-  opacity: 0;
-  animation: fadeUpAnim 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.anim-delay-header { animation-delay: 0.1s; }
-.anim-delay-title  { animation-delay: 0.25s; }
-.anim-delay-card-1 { animation-delay: 0.4s; }
-.anim-delay-card-2 { animation-delay: 0.48s; }
-.anim-delay-card-3 { animation-delay: 0.56s; }
-.anim-delay-card-4 { animation-delay: 0.64s; }
-.anim-delay-voice  { animation-delay: 0.7s; }
-.anim-delay-slider { animation-delay: 0.85s; }
-
-/* Control Bar Below Phone */
-.footer-controls {
-  margin-top: 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 20;
-}
-
-.control-pill {
-  padding: 8px 16px;
-  border-radius: 9999px;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.8);
   text-decoration: none;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.control-pill:hover {
+.footer-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
 }

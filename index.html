@@ -3,221 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FootyQuiz Pro - Realistic 3D Liquid Glass Arena</title>
+  <title>FootyQuiz Pro - Next-Gen 3D Ball Knowledge Arena</title>
 
   <!-- Google & Web Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons & Three.js & Confetti CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Three.js, Confetti, and Lucide Icons -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- PAGE BACKGROUND AMBIENT GLOWS -->
-  <div class="page-bg-ambient">
-    <div class="glow-1"></div>
-    <div class="glow-2"></div>
+  <!-- 3D THREE.JS REALISTIC STADIUM & SOCCER BALL BACKGROUND -->
+  <canvas id="three-stadium-canvas"></canvas>
+
+  <!-- BROADCAST OVERLAY -->
+  <div class="broadcast-wrapper">
+
+    <!-- 1. TOP BROADCAST HUD -->
+    <header class="top-broadcast-hud">
+      
+      <!-- Brand Logo -->
+      <div class="brand-badge" onclick="app.resetGame()">
+        <div class="brand-logo-icon">
+          <i data-lucide="trophy" style="width:20px; height:20px; color:#032b1a;"></i>
+        </div>
+        <div>
+          <div class="brand-title">FOOTY<span>QUIZ</span><span class="brand-tag">3D LIVE</span></div>
+        </div>
+      </div>
+
+      <!-- Center HUD: Timer, Score, Streak -->
+      <div class="hud-center-stats">
+        
+        <!-- 30-Second Shot Clock -->
+        <div class="shot-clock-pill" id="hud-clock-pill">
+          <i data-lucide="clock" style="width:15px; height:15px; color:#00f59b;" id="hud-clock-icon"></i>
+          <span class="clock-number" id="hud-clock-text">30s</span>
+        </div>
+
+        <!-- Live Match Score -->
+        <div class="live-score-pill">
+          <span id="hud-score-text">0</span>
+          <small>PTS</small>
+        </div>
+
+        <!-- Streak Combo Multiplier -->
+        <div class="streak-flame-badge" id="hud-streak-badge" style="display:none;">
+          <i data-lucide="flame" style="width:13px; height:13px; fill:#f59e0b; color:#f59e0b;"></i>
+          <span id="hud-streak-text">2x COMBO</span>
+        </div>
+
+      </div>
+
+      <!-- Addictive Lifelines: 50:50, +15s Freeze, VAR Review -->
+      <div class="lifelines-bar">
+        <button class="lifeline-btn" id="btn-ll-5050" onclick="app.useLifeline5050()" title="50:50 - Remove 2 Wrong Options">
+          <span>🎯</span>
+          <span>50:50</span>
+        </button>
+        <button class="lifeline-btn" id="btn-ll-freeze" onclick="app.useLifelineFreeze()" title="Freeze - Add +15 Seconds">
+          <span>⏱️</span>
+          <span>+15s</span>
+        </button>
+        <button class="lifeline-btn" id="btn-ll-var" onclick="app.useLifelineVar()" title="VAR - Second Chance Protection">
+          <span>🛡️</span>
+          <span>VAR</span>
+        </button>
+        <button class="lifeline-btn" id="btn-sound-toggle" onclick="app.toggleSound()" title="Toggle Stadium Audio">
+          <i data-lucide="volume-2" style="width:14px; height:14px;" id="icon-sound"></i>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- 2. MAIN MATCH ARENA -->
+    <main class="match-arena-stage">
+
+      <!-- Question Hero Card -->
+      <div class="question-hero-card">
+        <div class="meta-tags-row">
+          <div class="competition-pill">
+            <span style="width:7px; height:7px; border-radius:9999px; background:#00f59b; box-shadow:0 0 8px #00f59b;"></span>
+            <span id="competition-tag">FIFA World Cup</span>
+            <span style="color:rgba(255,255,255,0.4); margin:0 4px;">•</span>
+            <span id="question-counter" style="color:rgba(255,255,255,0.7);">Question 1 of 10</span>
+          </div>
+          <span class="tier-badge" id="tier-tag">Very Easy</span>
+        </div>
+
+        <h2 class="question-title" id="question-title">
+          Loading 10,000 football questions into the 3D stadium...
+        </h2>
+      </div>
+
+      <!-- 4 Holographic 3D Option Cards -->
+      <div class="cards-3d-grid" id="options-container">
+        <!-- Card 0 -->
+        <button type="button" class="hologram-option-card" id="card-opt-0" onclick="app.selectOption(0)">
+          <span class="card-key-pill">[1]</span>
+          <span class="card-answer-text" id="opt-text-0">Option 1</span>
+        </button>
+
+        <!-- Card 1 -->
+        <button type="button" class="hologram-option-card" id="card-opt-1" onclick="app.selectOption(1)">
+          <span class="card-key-pill">[2]</span>
+          <span class="card-answer-text" id="opt-text-1">Option 2</span>
+        </button>
+
+        <!-- Card 2 -->
+        <button type="button" class="hologram-option-card" id="card-opt-2" onclick="app.selectOption(2)">
+          <span class="card-key-pill">[3]</span>
+          <span class="card-answer-text" id="opt-text-2">Option 3</span>
+        </button>
+
+        <!-- Card 3 -->
+        <button type="button" class="hologram-option-card" id="card-opt-3" onclick="app.selectOption(3)">
+          <span class="card-key-pill">[4]</span>
+          <span class="card-answer-text" id="opt-text-3">Option 4</span>
+        </button>
+      </div>
+
+      <!-- Match Commentary & Next Question Drawer -->
+      <div class="commentary-drawer" id="commentary-drawer">
+        <div class="commentary-header">
+          <div class="commentary-callout" id="commentary-callout">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="commentary-pts" id="commentary-pts">+180 PTS</div>
+        </div>
+
+        <p class="commentary-text" id="commentary-text">
+          Match fact goes here.
+        </p>
+
+        <button type="button" class="next-action-btn" onclick="app.nextQuestion()">
+          <span>Next Question (Press Space)</span>
+          <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- 3. BROADCAST FOOTER & LEAGUE FILTER -->
+    <footer class="broadcast-footer">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="footer-btn" onclick="app.cycleCompetition()">
+          <i data-lucide="filter" style="width:13px; height:13px;"></i>
+          <span id="footer-comp-label">All Leagues (10,000 Questions)</span>
+        </button>
+        <button type="button" class="footer-btn" onclick="app.cycleDifficulty()">
+          <i data-lucide="gauge" style="width:13px; height:13px;"></i>
+          <span id="footer-diff-label">Tier: Very Easy</span>
+        </button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px;">
+        <a href="https://bhuwanadhikari007.com.np/footyhub/" class="footer-btn">
+          <i data-lucide="external-link" style="width:13px; height:13px;"></i>
+          <span>FootyHub</span>
+        </a>
+      </div>
+    </footer>
+
   </div>
 
-  <!-- 3D PERSPECTIVE STAGE -->
-  <div class="phone-perspective-stage" id="phone-perspective-stage">
-
-    <!-- REALISTIC PHONE FRAME MOCKUP (375px x 780px) -->
-    <div class="phone-frame" id="phone-frame">
+  <!-- ========================================================= -->
+  <!-- 4. EA SPORTS FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL  -->
+  <!-- ========================================================= -->
+  <div class="fut-card-modal" id="modal-results">
+    <div class="fut-card-container">
       
-      <!-- 3D Specular Glare Reflection Layer -->
-      <div class="phone-glare-reflection" id="phone-glare"></div>
-
-      <!-- FULL-BLEED BACKGROUND & OVERLAYS -->
-      <div class="phone-bg-bleed"></div>
-      <div class="phone-bg-overlay"></div>
-
-      <!-- DYNAMIC ISLAND (120px wide, 32px tall) -->
-      <div class="dynamic-island" id="dynamic-island" onclick="app.toggleIslandExpand()">
-        <div class="flex items-center gap-1.5" style="display:flex; align-items:center; gap:6px;">
-          <span style="width:7px; height:7px; border-radius:9999px; background:#00f59b; box-shadow:0 0 8px #00f59b;" class="animate-pulse"></span>
-          <span id="island-timer" style="color:#ffffff; font-size:11px; font-weight:700; letter-spacing:0.02em;">30s</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:4px;">
-          <span id="island-mode" style="color:rgba(255,255,255,0.7); font-size:10px; font-weight:600;">Footy 3D</span>
-          <i data-lucide="trophy" style="width:12px; height:12px; color:#fbbf24;"></i>
-        </div>
+      <div style="font-size:12px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:8px;">
+        MATCH FULL TIME • PACK UNLOCKED
       </div>
 
-      <!-- 3D THREE.JS SOCCER BALL CONTAINER -->
-      <div id="three-canvas-container"></div>
-
-      <!-- PHONE SCREEN CONTENT LAYOUT -->
-      <div class="phone-content">
-
-        <!-- 1. Header Badge -->
-        <div class="header-badge-pill liquid-glass anim-fade-up anim-delay-header" id="header-badge" onclick="app.openCategoryMenu()">
-          <i data-lucide="timer" style="width:12px; height:12px; color:rgba(255,255,255,0.8);"></i>
-          <span id="header-badge-text" style="color:rgba(255,255,255,0.9); font-size:12px; font-weight:500;">FootyQuiz Daily</span>
-          <span style="margin-left:4px; font-size:9px; padding:2px 6px; border-radius:9999px; background:rgba(0,245,155,0.2); color:#00f59b; font-weight:700;">PRO</span>
-        </div>
-
-        <!-- 2. Title Section -->
-        <div class="title-section anim-fade-up anim-delay-title">
-          <div class="quiz-subtitle" id="quiz-subtitle">Question 1 / 10 • Very Easy</div>
-          <h1 class="quiz-heading" id="quiz-heading">Which superstar won the 2022 FIFA World Cup with Argentina?</h1>
-        </div>
-
-        <!-- 3. Selection Grid (2 columns, 12px gap) -->
-        <div class="selection-grid" id="selection-grid">
+      <!-- 3D Tilting FUT ICON Card -->
+      <div class="fut-icon-card" id="fut-card">
+        <div class="fut-card-inner">
           
-          <!-- Card 01 -->
-          <button type="button" class="quiz-card liquid-glass anim-fade-up anim-delay-card-1" id="card-1" onclick="app.handleCardClick(0)">
-            <span class="quiz-card-number" id="card-num-1">01</span>
-            <span class="quiz-card-text" id="card-text-1">Lionel Messi</span>
-          </button>
-
-          <!-- Card 02 -->
-          <button type="button" class="quiz-card liquid-glass anim-fade-up anim-delay-card-2" id="card-2" onclick="app.handleCardClick(1)">
-            <span class="quiz-card-number" id="card-num-2">02</span>
-            <span class="quiz-card-text" id="card-text-2">Cristiano Ronaldo</span>
-          </button>
-
-          <!-- Card 03 -->
-          <button type="button" class="quiz-card liquid-glass anim-fade-up anim-delay-card-3" id="card-3" onclick="app.handleCardClick(2)">
-            <span class="quiz-card-number" id="card-num-3">03</span>
-            <span class="quiz-card-text" id="card-text-3">Kylian Mbappé</span>
-          </button>
-
-          <!-- Card 04 -->
-          <button type="button" class="quiz-card liquid-glass anim-fade-up anim-delay-card-4" id="card-4" onclick="app.handleCardClick(3)">
-            <span class="quiz-card-number" id="card-num-4">04</span>
-            <span class="quiz-card-text" id="card-text-4">Neymar Jr</span>
-          </button>
-
-        </div>
-
-        <!-- 4. Voice / Stadium Sound Button (centered, 24px vertical margin) -->
-        <div class="voice-button-wrapper anim-fade-up anim-delay-voice">
-          <div class="voice-radial-glow"></div>
-          <button type="button" class="voice-btn-circle liquid-glass" id="btn-voice" onclick="app.toggleSound()" title="Toggle Stadium Audio">
-            <!-- 5-bar vertical waveform SVG icon -->
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round">
-              <line x1="4" y1="9" x2="4" y2="15"></line>
-              <line x1="8" y1="6" x2="8" y2="18"></line>
-              <line x1="12" y1="3" x2="12" y2="21"></line>
-              <line x1="16" y1="7" x2="16" y2="17"></line>
-              <line x1="20" y1="10" x2="20" y2="14"></line>
-            </svg>
-          </button>
-          <span class="voice-label" id="voice-label">voice</span>
-        </div>
-
-        <!-- 5. Slide-to-Confirm Button (bottom) -->
-        <div class="anim-fade-up anim-delay-slider" style="margin-top:auto;">
-          <div class="slide-track liquid-glass" id="slide-track" onclick="app.handleTrackTap(event)">
-            <!-- Circular thumb with ArrowRight -->
-            <div class="slide-thumb" id="slide-thumb">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1f2937" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
+          <div class="fut-header-row">
+            <div class="fut-ovr-box">
+              <div class="fut-ovr-number" id="fut-rating-num">96</div>
+              <div class="fut-pos">BALLER</div>
             </div>
-            
-            <span class="slide-text" id="slide-text">Done</span>
-
-            <!-- 3 Chevrons Right (white/40, white/50, white/60) -->
-            <div class="slide-chevrons">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <div class="fut-club-badge">
+              👑
             </div>
           </div>
-        </div>
 
+          <div class="fut-player-title" id="fut-player-name">BALL KNOWLEDGE ICON</div>
+          <div class="fut-rank-title" id="fut-rank-desc">🏆 Ballon d'Or Tactician</div>
+
+          <!-- Stats Radar Grid -->
+          <div class="fut-stats-grid">
+            <div class="fut-stat-item">
+              <span style="color:rgba(255,255,255,0.6);">SCORE</span>
+              <span class="fut-stat-num" id="fut-stat-score">2,850</span>
+            </div>
+            <div class="fut-stat-item">
+              <span style="color:rgba(255,255,255,0.6);">ACCURACY</span>
+              <span class="fut-stat-num" id="fut-stat-acc">90%</span>
+            </div>
+            <div class="fut-stat-item">
+              <span style="color:rgba(255,255,255,0.6);">MAX STREAK</span>
+              <span class="fut-stat-num" id="fut-stat-streak">7 🔥</span>
+            </div>
+            <div class="fut-stat-item">
+              <span style="color:rgba(255,255,255,0.6);">SPEED</span>
+              <span class="fut-stat-num" id="fut-stat-speed">95 PAC</span>
+            </div>
+          </div>
+
+        </div>
       </div>
 
-      <!-- FEEDBACK DRAWER OVERLAY -->
-      <div id="drawer-feedback" style="display:none; position:absolute; bottom:0; left:0; right:0; z-index:40; padding:24px; border-radius:40px 40px 0 0; background:rgba(9,15,26,0.95); backdrop-filter:blur(16px); border-top:1.5px solid rgba(0,245,155,0.4); box-shadow:0 -10px 40px rgba(0,0,0,0.6);" class="anim-fade-up">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div id="feedback-result-title" style="font-size:18px; font-weight:800; color:#00f59b; display:flex; align-items:center; gap:6px;">
-            <span>GOAL! Correct</span>
-          </div>
-          <span id="feedback-pts-badge" style="font-size:12px; font-weight:800; color:#00f59b; padding:2px 8px; border-radius:9999px; background:rgba(0,245,155,0.15);">+180 PTS</span>
-        </div>
-        <div style="padding:12px; border-radius:18px; background:rgba(255,255,255,0.04); font-size:13px; color:rgba(255,255,255,0.85); line-height:1.4; margin-bottom:14px;" id="feedback-explanation">
-          Lionel Messi led Argentina to victory in Qatar 2022, scoring 7 goals and winning the Golden Ball.
-        </div>
-        <button type="button" class="liquid-glass liquid-glass-selected" style="width:100%; height:48px; border-radius:9999px; font-size:14px; font-weight:700; color:#ffffff; cursor:pointer;" onclick="app.nextQuestion()">
-          Next Question ➔
-        </button>
-      </div>
-
-      <!-- RESULTS & FOOTBALL IQ OVERLAY -->
-      <div id="modal-results" style="display:none; position:absolute; inset:0; z-index:55; padding:56px 24px 24px 24px; background:rgba(6,10,18,0.97); backdrop-filter:blur(20px); flex-direction:column; align-items:center; text-align:center; color:#ffffff; overflow-y:auto;">
-        <span style="font-size:11px; font-weight:800; letter-spacing:0.1em; color:#00f59b; text-transform:uppercase;">Match Full Time</span>
-        <h2 style="font-size:24px; font-weight:800; margin:4px 0 16px 0;">Certified Football IQ</h2>
-        
-        <div class="liquid-glass" style="width:100%; border-radius:28px; padding:20px; margin-bottom:14px;">
-          <div style="font-size:11px; color:rgba(255,255,255,0.5); font-weight:600; text-transform:uppercase;">Official Rating</div>
-          <div id="res-iq-num" style="font-size:52px; font-weight:900; color:#00f59b; font-family:'Montserrat',sans-serif; text-shadow:0 0 20px rgba(0,245,155,0.4);">
-            145
-          </div>
-          <div id="res-iq-title" style="font-size:14px; font-weight:700; color:#ffffff;">
-            🏆 Ballon d'Or Tactician
-          </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; margin-bottom:16px;">
-          <div class="liquid-glass" style="border-radius:18px; padding:10px;">
-            <div style="font-size:10px; color:rgba(255,255,255,0.5);">SCORE</div>
-            <div id="res-score" style="font-size:18px; font-weight:800; margin-top:2px;">2,450</div>
-          </div>
-          <div class="liquid-glass" style="border-radius:18px; padding:10px;">
-            <div style="font-size:10px; color:rgba(255,255,255,0.5);">ACCURACY</div>
-            <div id="res-acc" style="font-size:18px; font-weight:800; color:#00f59b; margin-top:2px;">90%</div>
-          </div>
-          <div class="liquid-glass" style="border-radius:18px; padding:10px;">
-            <div style="font-size:10px; color:rgba(255,255,255,0.5);">COMBO</div>
-            <div id="res-combo" style="font-size:18px; font-weight:800; color:#fbbf24; margin-top:2px;">6 🔥</div>
-          </div>
-        </div>
-
-        <button type="button" class="liquid-glass liquid-glass-selected" style="width:100%; height:48px; border-radius:9999px; font-size:14px; font-weight:700; color:#ffffff; cursor:pointer; margin-bottom:8px;" onclick="app.restartQuiz()">
-          Play Again
+      <!-- Post-Match Actions -->
+      <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px;">
+        <button type="button" class="next-action-btn" onclick="app.resetGame()">
+          <i data-lucide="rotate-ccw" style="width:16px; height:16px;"></i>
+          <span>Play Another Match</span>
         </button>
 
-        <button type="button" class="liquid-glass" style="width:100%; height:44px; border-radius:9999px; font-size:13px; font-weight:600; color:rgba(255,255,255,0.9); cursor:pointer; margin-bottom:8px;" onclick="app.shareScorecard()">
-          Share Scorecard
+        <button type="button" class="footer-btn" style="justify-content:center; padding:12px; font-size:13px;" onclick="app.shareScorecard()">
+          <i data-lucide="share-2" style="width:15px; height:15px;"></i>
+          <span>Share Certified 3D Card</span>
         </button>
 
-        <a href="https://bhuwanadhikari007.com.np/footyhub/" class="liquid-glass" style="width:100%; height:44px; border-radius:9999px; font-size:13px; font-weight:600; color:#4ade80; display:flex; align-items:center; justify-content:center; text-decoration:none;">
-          Back to FootyHub ⚽
+        <a href="https://bhuwanadhikari007.com.np/footyhub/" class="footer-btn" style="justify-content:center; padding:10px; font-size:12px; color:#4ade80;">
+          <span>Back to FootyHub ⚽</span>
         </a>
       </div>
 
     </div>
-
   </div>
 
-  <!-- EXTERNAL CONTROLS BAR -->
-  <div class="footer-controls">
-    <button type="button" class="control-pill" onclick="app.toggle3DTilt()" id="btn-toggle-3d">
-      <i data-lucide="box" style="width:14px; height:14px;"></i>
-      <span>3D Tilt: Active</span>
-    </button>
-    <button type="button" class="control-pill" onclick="app.openCategoryMenu()">
-      <i data-lucide="layers" style="width:14px; height:14px;"></i>
-      <span id="label-active-league">All Leagues</span>
-    </button>
-    <a href="https://bhuwanadhikari007.com.np/footyhub/" class="control-pill">
-      <i data-lucide="external-link" style="width:14px; height:14px;"></i>
-      <span>FootyHub</span>
-    </a>
-  </div>
-
-  <!-- SCRIPTS -->
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,13 +1,14 @@
 /**
- * FootyQuiz Pro - 3D Liquid Glass Engine
- * Features Three.js 3D Soccer Ball, Realistic 3D Tilt Physics, 30s Shot Clock,
- * 10,000 Questions Client-Side Engine, Web Audio Synthesizer, and Dynamic Island.
+ * FootyQuiz Pro - Next-Gen 3D Broadcast Matchday Engine
+ * Features Three.js 3D Stadium & Goal Shootout Physics, Web Audio Synthesizer,
+ * Lifelines (50:50, +15s, VAR), Holographic 3D Cards, and EA FC 3D ICON Card Reveal.
  */
 
-class LiquidFootyApp {
+class Footy3DBroadcastApp {
   constructor() {
-    this.questions = [];
+    // Game Data
     this.allQuestions = [];
+    this.questions = [];
     this.currentIndex = 0;
     this.score = 0;
     this.streak = 0;
@@ -15,207 +16,316 @@ class LiquidFootyApp {
     this.correctCount = 0;
     this.wrongCount = 0;
 
-    this.selectedOptionIndex = null;
+    // State
     this.isAnsweringAllowed = false;
-    this.isConfirmed = false;
-
-    // Filters
+    this.selectedOption = null;
     this.activeCompetition = 'all';
     this.activeDifficulty = 'Very Easy';
+
+    // Lifelines (1 use per match)
+    this.lifelines = {
+      fifty: true,
+      freeze: true,
+      var: true
+    };
+    this.varActive = false;
 
     // 30s Timer
     this.timerSeconds = 30;
     this.timerInterval = null;
 
-    // 3D Tilt State
-    this.isTiltActive = true;
-
-    // Audio Engine
+    // Sound
     this.soundEnabled = true;
     this.audioCtx = null;
 
-    // Three.js State
+    // Three.js Stadium & Ball
     this.scene = null;
     this.camera = null;
     this.renderer = null;
-    this.ballMesh = null;
-    this.ballParticles = null;
+    this.ball = null;
+    this.netMesh = null;
+    this.floodlights = [];
+    this.ballInitialPos = { x: 0, y: 0.45, z: 2.2 };
+    this.isShooting = false;
 
     this.init();
   }
 
   async init() {
-    this.init3DTilt();
-    this.initThreeBall();
-    this.initSliderDrag();
-    this.initKeyboard();
+    this.initThreeStadium();
+    this.initCardTiltEffects();
+    this.initKeyboardShortcuts();
     lucide.createIcons();
 
     await this.loadQuestions();
-    this.startQuiz();
+    this.startMatch();
   }
 
   // =========================================================
-  // 1. THREE.JS 3D SOCCER BALL WITH GLOW & PARTICLES
+  // 1. THREE.JS 3D STADIUM, GOAL FRAME & BALL SHOOTOUT
   // =========================================================
-  initThreeBall() {
-    const container = document.getElementById('three-canvas-container');
-    if (!container || typeof THREE === 'undefined') return;
+  initThreeStadium() {
+    const canvas = document.getElementById('three-stadium-canvas');
+    if (!canvas || typeof THREE === 'undefined') return;
 
-    const width = 120;
-    const height = 120;
-
+    // Scene & Camera
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    this.camera.position.z = 2.8;
+    this.scene.fog = new THREE.FogExp2(0x050811, 0.035);
 
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    this.renderer.setSize(width, height);
+    this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+    this.camera.position.set(0, 1.6, 5.2);
+    this.camera.lookAt(0, 1.2, -3);
+
+    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.appendChild(this.renderer.domElement);
+    this.renderer.shadowMap.enabled = true;
 
-    // Procedural Soccer Ball Texture
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
+    // 1. Stadium Grass Pitch
+    const pitchGeo = new THREE.PlaneGeometry(60, 60);
+    const pitchMat = new THREE.MeshStandardMaterial({
+      color: 0x071e12,
+      roughness: 0.85,
+      metalness: 0.1
+    });
+    const pitch = new THREE.Mesh(pitchGeo, pitchMat);
+    pitch.rotation.x = -Math.PI / 2;
+    pitch.receiveShadow = true;
+    this.scene.add(pitch);
+
+    // 2. White Touchlines / Penalty Box Markings
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const penaltyLine = new THREE.Mesh(new THREE.PlaneGeometry(16, 0.08), lineMat);
+    penaltyLine.rotation.x = -Math.PI / 2;
+    penaltyLine.position.set(0, 0.01, 1.5);
+    this.scene.add(penaltyLine);
+
+    // 3. Goal Frame (Posts + Crossbar)
+    const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.8 });
     
-    // Hexagonal / Pentagonal Star Ball Texture
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, 512, 512);
-    ctx.fillStyle = '#0f172a';
+    // Left Post
+    const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 16), postMat);
+    leftPost.position.set(-2.8, 1.3, -4);
+    this.scene.add(leftPost);
+
+    // Right Post
+    const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 16), postMat);
+    rightPost.position.set(2.8, 1.3, -4);
+    this.scene.add(rightPost);
+
+    // Crossbar
+    const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5.68, 16), postMat);
+    crossbar.rotation.z = Math.PI / 2;
+    crossbar.position.set(0, 2.6, -4);
+    this.scene.add(crossbar);
+
+    // 4. Goal Net Mesh
+    const netGeo = new THREE.PlaneGeometry(5.6, 2.6, 14, 8);
+    const netMat = new THREE.MeshBasicMaterial({
+      color: 0x94a3b8,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.4
+    });
+    this.netMesh = new THREE.Mesh(netGeo, netMat);
+    this.netMesh.position.set(0, 1.3, -4.5);
+    this.scene.add(this.netMesh);
+
+    // 5. Photorealistic 3D Soccer Ball
+    const ballCanvas = document.createElement('canvas');
+    ballCanvas.width = 512;
+    ballCanvas.height = 512;
+    const bctx = ballCanvas.getContext('2d');
+    bctx.fillStyle = '#ffffff';
+    bctx.fillRect(0, 0, 512, 512);
+    bctx.fillStyle = '#0f172a';
     
     const drawPentagon = (x, y, r) => {
-      ctx.beginPath();
+      bctx.beginPath();
       for (let i = 0; i < 5; i++) {
         const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
         const px = x + r * Math.cos(a);
         const py = y + r * Math.sin(a);
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        if (i === 0) bctx.moveTo(px, py);
+        else bctx.lineTo(px, py);
       }
-      ctx.closePath();
-      ctx.fill();
+      bctx.closePath();
+      bctx.fill();
     };
+    drawPentagon(256, 256, 75);
+    drawPentagon(80, 110, 55);
+    drawPentagon(432, 110, 55);
+    drawPentagon(120, 410, 55);
+    drawPentagon(392, 410, 55);
 
-    drawPentagon(256, 256, 68);
-    drawPentagon(80, 100, 52);
-    drawPentagon(432, 100, 52);
-    drawPentagon(120, 412, 52);
-    drawPentagon(392, 412, 52);
-
-    const ballTexture = new THREE.CanvasTexture(canvas);
-
-    // Ball Geometry
-    const geometry = new THREE.SphereGeometry(0.85, 32, 32);
-    const material = new THREE.MeshStandardMaterial({
+    const ballTexture = new THREE.CanvasTexture(ballCanvas);
+    const ballMat = new THREE.MeshStandardMaterial({
       map: ballTexture,
       roughness: 0.25,
-      metalness: 0.1,
-      bumpScale: 0.05
+      metalness: 0.15
     });
 
-    this.ballMesh = new THREE.Mesh(geometry, material);
-    this.scene.add(this.ballMesh);
+    this.ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 32), ballMat);
+    this.ball.position.set(this.ballInitialPos.x, this.ballInitialPos.y, this.ballInitialPos.z);
+    this.ball.castShadow = true;
+    this.scene.add(this.ball);
 
-    // Stadium Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    // 6. Stadium Floodlights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
 
-    const floodLight = new THREE.DirectionalLight(0x00f59b, 1.2);
-    floodLight.position.set(2, 3, 2);
-    this.scene.add(floodLight);
+    // Green Pitch Floodlight
+    const light1 = new THREE.SpotLight(0x00f59b, 2.5, 40, Math.PI / 4, 0.4);
+    light1.position.set(-8, 12, 6);
+    light1.target = this.ball;
+    this.scene.add(light1);
+    this.floodlights.push(light1);
 
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
-    rimLight.position.set(-2, -1, 1);
-    this.scene.add(rimLight);
+    // Cyan Stadium Floodlight
+    const light2 = new THREE.SpotLight(0x38bdf8, 2.0, 40, Math.PI / 4, 0.4);
+    light2.position.set(8, 12, 6);
+    light2.target = this.ball;
+    this.scene.add(light2);
+    this.floodlights.push(light2);
 
-    // Animation Loop
-    let spinSpeed = 0.008;
+    // 7. Floating Stadium Atmosphere Particles
+    const particleCount = 180;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      particlePositions[i] = (Math.random() - 0.5) * 20;
+      particlePositions[i + 1] = Math.random() * 8;
+      particlePositions[i + 2] = (Math.random() - 0.5) * 16;
+    }
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x00f59b,
+      size: 0.045,
+      transparent: true,
+      opacity: 0.6
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    this.scene.add(particles);
+
+    // Resize Handler
+    window.addEventListener('resize', () => {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Render Animation Loop
+    let time = 0;
     const animate = () => {
       requestAnimationFrame(animate);
-      if (this.ballMesh) {
-        this.ballMesh.rotation.y += spinSpeed;
-        this.ballMesh.rotation.x += spinSpeed * 0.4;
+      time += 0.01;
+
+      // Gentle ball rotation when idle
+      if (!this.isShooting && this.ball) {
+        this.ball.rotation.y += 0.005;
+        this.ball.rotation.x += 0.003;
       }
+
+      // Gentle floating particles
+      particles.rotation.y = time * 0.03;
+
       this.renderer.render(this.scene, this.camera);
     };
     animate();
   }
 
-  triggerGoalBallSpin() {
-    if (!this.ballMesh) return;
-    let count = 0;
+  // 3D BALL SHOOTOUT PHYSICS
+  shootBall(isCorrect) {
+    if (!this.ball || this.isShooting) return;
+    this.isShooting = true;
+
+    const startX = this.ball.position.x;
+    const startY = this.ball.position.y;
+    const startZ = this.ball.position.z;
+
+    // Target: Top corner goal or crossbar rebound
+    let targetX = 2.0;
+    let targetY = 2.2;
+    let targetZ = -4.2;
+
+    if (!isCorrect) {
+      // Direct Crossbar Clang
+      targetX = 0.2;
+      targetY = 2.65;
+      targetZ = -4.0;
+    }
+
+    let progress = 0;
+    const duration = 40; // ~650ms
+
+    this.playBallKickSound();
+
     const interval = setInterval(() => {
-      this.ballMesh.rotation.y += 0.15;
-      this.ballMesh.rotation.x += 0.08;
-      count++;
-      if (count > 25) clearInterval(interval);
+      progress++;
+      const t = progress / duration;
+
+      // Parabolic Arc
+      this.ball.position.x = startX + (targetX - startX) * t;
+      this.ball.position.z = startZ + (targetZ - startZ) * t;
+      this.ball.position.y = startY + (targetY - startY) * t + Math.sin(t * Math.PI) * 1.2;
+
+      // High spin
+      this.ball.rotation.x -= 0.35;
+      this.ball.rotation.z += 0.15;
+
+      if (progress >= duration) {
+        clearInterval(interval);
+
+        if (isCorrect) {
+          // GOAL IN TOP CORNER
+          this.playNetSwooshSound();
+          this.playGoalCheer();
+          this.flashFloodlights(0x00f59b);
+
+          if (this.netMesh) {
+            this.netMesh.position.z = -4.7;
+            setTimeout(() => this.netMesh.position.z = -4.5, 300);
+          }
+
+          if (window.confetti) {
+            confetti({ particleCount: 75, spread: 70, origin: { y: 0.6 } });
+          }
+
+        } else {
+          // CROSSBAR REBOUND
+          this.playCrossbarClangSound();
+          this.playRefereeWhistle();
+          this.flashFloodlights(0xef4444);
+
+          // Rebound back
+          this.ball.position.z += 0.8;
+          this.ball.position.y -= 0.5;
+        }
+
+        setTimeout(() => this.resetBallPosition(), 1800);
+      }
     }, 16);
   }
 
-  triggerMissBallWobble() {
-    if (!this.ballMesh) return;
-    let count = 0;
-    const originalX = this.ballMesh.position.x;
-    const interval = setInterval(() => {
-      this.ballMesh.position.x = originalX + (Math.sin(count * 2) * 0.1);
-      count++;
-      if (count > 12) {
-        this.ballMesh.position.x = originalX;
-        clearInterval(interval);
-      }
-    }, 20);
+  resetBallPosition() {
+    if (!this.ball) return;
+    this.ball.position.set(this.ballInitialPos.x, this.ballInitialPos.y, this.ballInitialPos.z);
+    this.isShooting = false;
   }
 
-  // =========================================================
-  // 2. REALISTIC 3D PHONE TILT & SPECULAR GLARE
-  // =========================================================
-  init3DTilt() {
-    const frame = document.getElementById('phone-frame');
-    const glare = document.getElementById('phone-glare');
-    if (!frame) return;
-
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isTiltActive) return;
-
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
-      const normX = (e.clientX - centerX) / centerX;
-      const normY = (e.clientY - centerY) / centerY;
-
-      const rotY = normX * 12; // -12deg to +12deg
-      const rotX = -normY * 12; // -12deg to +12deg
-
-      frame.style.transform = `rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg) translateZ(10px)`;
-
-      // Specular glare reflection moving across glass
-      if (glare) {
-        const glareX = Math.round(50 + (normX * 35));
-        const glareY = Math.round(30 + (normY * 35));
-        glare.style.background = `radial-gradient(circle at ${glareX}% ${glareY}%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%)`;
-      }
-    });
-
-    window.addEventListener('mouseleave', () => {
-      if (frame) frame.style.transform = 'rotateY(0deg) rotateX(0deg) translateZ(0px)';
+  flashFloodlights(colorHex) {
+    this.floodlights.forEach(l => {
+      l.color.setHex(colorHex);
+      l.intensity = 4.5;
+      setTimeout(() => {
+        l.color.setHex(0x00f59b);
+        l.intensity = 2.2;
+      }, 600);
     });
   }
 
-  toggle3DTilt() {
-    this.isTiltActive = !this.isTiltActive;
-    const frame = document.getElementById('phone-frame');
-    const btn = document.getElementById('btn-toggle-3d');
-    if (frame) {
-      frame.style.transform = 'rotateY(0deg) rotateX(0deg)';
-    }
-    if (btn) {
-      btn.querySelector('span').textContent = `3D Tilt: ${this.isTiltActive ? 'Active' : 'Off'}`;
-    }
-  }
-
   // =========================================================
-  // 3. SOUND SYNTHESIZER
+  // 2. REALISTIC AUDIO SYNTHESIZER (ZERO EXTERNAL ASSETS)
   // =========================================================
   initAudio() {
     if (!this.audioCtx) {
@@ -227,44 +337,149 @@ class LiquidFootyApp {
     }
   }
 
-  playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.18) {
+  // Deep Punchy Ball Kick
+  playBallKickSound() {
     if (!this.soundEnabled) return;
-    try {
-      this.initAudio();
+    this.initAudio();
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+
+    osc.frequency.setValueAtTime(140, this.audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(35, this.audioCtx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.35, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.14);
+
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.14);
+  }
+
+  // Metallic Crossbar "CLANG!"
+  playCrossbarClangSound() {
+    if (!this.soundEnabled) return;
+    this.initAudio();
+
+    [880, 1320, 1760].forEach((freq, idx) => {
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
-      osc.type = type;
+      osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-      gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+      gain.gain.setValueAtTime(0.2 / (idx + 1), this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + 0.45);
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
       osc.start();
-      osc.stop(this.audioCtx.currentTime + duration);
-    } catch (e) {}
+      osc.stop(this.audioCtx.currentTime + 0.45);
+    });
   }
 
+  // Goal Net Ripple Swoosh
+  playNetSwooshSound() {
+    if (!this.soundEnabled) return;
+    this.initAudio();
+    const bufferSize = this.audioCtx.sampleRate * 0.18;
+    const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const noise = this.audioCtx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1400;
+
+    const gain = this.audioCtx.createGain();
+    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.18);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    noise.start();
+  }
+
+  // Stadium Goal Roar (Harmonic Chord)
   playGoalCheer() {
-    this.playTone(523.25, 'triangle', 0.15, 0.2); // C5
-    setTimeout(() => this.playTone(659.25, 'triangle', 0.18, 0.2), 70); // E5
-    setTimeout(() => this.playTone(783.99, 'triangle', 0.25, 0.22), 140); // G5
-    setTimeout(() => this.playTone(1046.50, 'sine', 0.4, 0.25), 210); // C6
+    if (!this.soundEnabled) return;
+    this.initAudio();
+    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+      setTimeout(() => {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, this.audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.18, this.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + 0.5);
+      }, i * 60);
+    });
   }
 
-  playMissTone() {
-    this.playTone(220, 'sawtooth', 0.2, 0.18);
-    setTimeout(() => this.playTone(174.61, 'sawtooth', 0.35, 0.2), 100);
+  // Referee Whistle
+  playRefereeWhistle() {
+    if (!this.soundEnabled) return;
+    this.initAudio();
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(2800, this.audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.18, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.28);
   }
 
-  playTickTone() {
-    this.playTone(880, 'sine', 0.04, 0.05);
+  playHeartbeat() {
+    if (!this.soundEnabled) return;
+    this.initAudio();
+    const osc = this.audioCtx.createOscillator();
+    const gain = this.audioCtx.createGain();
+    osc.frequency.setValueAtTime(80, this.audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(this.audioCtx.destination);
+    osc.start();
+    osc.stop(this.audioCtx.currentTime + 0.08);
   }
 
   toggleSound() {
     this.soundEnabled = !this.soundEnabled;
-    const label = document.getElementById('voice-label');
-    if (label) label.textContent = this.soundEnabled ? 'voice' : 'muted';
-    this.playTone(this.soundEnabled ? 523 : 260, 'sine', 0.1);
+    const icon = document.getElementById('icon-sound');
+    if (this.soundEnabled) {
+      icon.setAttribute('data-lucide', 'volume-2');
+      icon.style.color = '#00f59b';
+    } else {
+      icon.setAttribute('data-lucide', 'volume-x');
+      icon.style.color = '#64748b';
+    }
+    lucide.createIcons();
+  }
+
+  // =========================================================
+  // 3. 3D CARD TILT PHYSICS (MOUSE / TOUCH)
+  // =========================================================
+  initCardTiltEffects() {
+    // 3D Tilt for FUT Icon Card
+    const futCard = document.getElementById('fut-card');
+    if (futCard) {
+      window.addEventListener('mousemove', (e) => {
+        const rect = futCard.getBoundingClientRect();
+        const cardX = rect.left + rect.width / 2;
+        const cardY = rect.top + rect.height / 2;
+        const normX = (e.clientX - cardX) / (window.innerWidth / 2);
+        const normY = (e.clientY - cardY) / (window.innerHeight / 2);
+        futCard.style.transform = `perspective(800px) rotateY(${normX * 18}deg) rotateX(${-normY * 18}deg)`;
+      });
+    }
   }
 
   // =========================================================
@@ -277,22 +492,21 @@ class LiquidFootyApp {
       this.allQuestions = await res.json();
       console.log(`Loaded ${this.allQuestions.length} football questions!`);
     } catch (e) {
-      console.warn("Using fallback questions pool", e);
-      // Rock-solid fallback casual questions
+      console.warn("Using verified fallback questions", e);
       this.allQuestions = [
-        { id: 1, c: "FIFA World Cup", d: "Very Easy", q: "Which country won the 2022 FIFA World Cup in Qatar?", o: ["Argentina", "France", "Croatia", "Morocco"], a: "Argentina", e: "Argentina won the 2022 World Cup after defeating France in a legendary penalty shootout." },
-        { id: 2, c: "La Liga", d: "Very Easy", q: "Which club does Lionel Messi hold the all-time scoring record for?", o: ["FC Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"], a: "FC Barcelona", e: "Lionel Messi scored an astronomical 672 goals for FC Barcelona." },
-        { id: 3, c: "Premier League", d: "Very Easy", q: "Which English club is known as 'The Gunners'?", o: ["Arsenal", "Chelsea", "Liverpool", "Manchester United"], a: "Arsenal", e: "Arsenal was founded in 1886 by munitions workers at the Royal Arsenal in Woolwich." },
-        { id: 4, c: "Premier League", d: "Very Easy", q: "What color home shirts do Manchester United and Liverpool both wear?", o: ["Red", "Blue", "White", "Yellow"], a: "Red", e: "Both Manchester United and Liverpool famously wear iconic red home kits." },
-        { id: 5, c: "FIFA World Cup", d: "Very Easy", q: "How many FIFA World Cup trophies has Brazil won in total?", o: ["5", "3", "4", "6"], a: "5", e: "Brazil is the most successful nation in World Cup history with 5 titles (1958, 1962, 1970, 1994, 2002)." }
+        { id: 1, c: "FIFA World Cup", d: "Very Easy", q: "Which country won the 2022 FIFA World Cup in Qatar?", o: ["Argentina", "France", "Croatia", "Morocco"], a: "Argentina", e: "Lionel Messi led Argentina to World Cup glory in Qatar 2022." },
+        { id: 2, c: "La Liga", d: "Very Easy", q: "Which club does Lionel Messi hold the all-time scoring record for?", o: ["FC Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"], a: "FC Barcelona", e: "Lionel Messi scored 672 goals for FC Barcelona." },
+        { id: 3, c: "Premier League", d: "Very Easy", q: "Which club is known as 'The Gunners'?", o: ["Arsenal", "Chelsea", "Liverpool", "Manchester United"], a: "Arsenal", e: "Arsenal was founded in 1886 by munitions workers at the Royal Arsenal." },
+        { id: 4, c: "Premier League", d: "Very Easy", q: "What color home shirts do Manchester United and Liverpool both wear?", o: ["Red", "Blue", "White", "Yellow"], a: "Red", e: "Both Manchester United and Liverpool wear red." },
+        { id: 5, c: "FIFA World Cup", d: "Very Easy", q: "How many World Cup trophies has Brazil won?", o: ["5", "3", "4", "6"], a: "5", e: "Brazil is the only nation with 5 World Cup titles." }
       ];
     }
   }
 
   // =========================================================
-  // 5. QUIZ RUNTIME & 30-SECOND SHOT CLOCK
+  // 5. MATCH KICKOFF & 30-SECOND SHOT CLOCK
   // =========================================================
-  startQuiz() {
+  startMatch() {
     this.currentIndex = 0;
     this.score = 0;
     this.streak = 0;
@@ -300,7 +514,14 @@ class LiquidFootyApp {
     this.correctCount = 0;
     this.wrongCount = 0;
 
-    // Filter by competition and difficulty
+    // Reset Lifelines
+    this.lifelines = { fifty: true, freeze: true, var: true };
+    this.varActive = false;
+    document.getElementById('btn-ll-5050').disabled = false;
+    document.getElementById('btn-ll-freeze').disabled = false;
+    document.getElementById('btn-ll-var').disabled = false;
+
+    // Filter questions
     let pool = this.allQuestions;
     if (this.activeCompetition !== 'all') {
       pool = pool.filter(q => q.c === this.activeCompetition);
@@ -310,7 +531,6 @@ class LiquidFootyApp {
       if (diffPool.length >= 10) pool = diffPool;
     }
 
-    // Shuffle and pick 10
     this.questions = [...pool].sort(() => 0.5 - Math.random()).slice(0, 10);
     this.renderQuestion();
   }
@@ -318,35 +538,29 @@ class LiquidFootyApp {
   renderQuestion() {
     const q = this.questions[this.currentIndex];
     if (!q) {
-      this.finishQuiz();
+      this.finishMatch();
       return;
     }
 
-    this.selectedOptionIndex = null;
     this.isAnsweringAllowed = true;
-    this.isConfirmed = false;
-    this.resetSlider();
+    this.selectedOption = null;
 
-    // Close any drawers
-    document.getElementById('drawer-feedback').style.display = 'none';
-    document.getElementById('modal-results').style.display = 'none';
+    // Hide commentary drawer
+    document.getElementById('commentary-drawer').style.display = 'none';
 
-    // Subtitle & Heading
-    document.getElementById('quiz-subtitle').textContent = `Question ${this.currentIndex + 1} / ${this.questions.length} • ${q.d}`;
-    document.getElementById('quiz-heading').textContent = q.q;
+    // HUD Updates
+    document.getElementById('competition-tag').textContent = q.c;
+    document.getElementById('tier-tag').textContent = q.d;
+    document.getElementById('question-counter').textContent = `Question ${this.currentIndex + 1} of ${this.questions.length}`;
+    document.getElementById('question-title').textContent = q.q;
 
-    // Reset 4 cards
-    const cardLetters = ['01', '02', '03', '04'];
+    // Render 4 Cards
     for (let i = 0; i < 4; i++) {
-      const card = document.getElementById(`card-${i + 1}`);
-      const cardNum = document.getElementById(`card-num-${i + 1}`);
-      const cardText = document.getElementById(`card-text-${i + 1}`);
-
-      cardNum.textContent = cardLetters[i];
-      cardText.textContent = q.o[i] || '';
-
-      card.className = "quiz-card liquid-glass anim-fade-up";
-      card.style.animationDelay = `${0.35 + (i * 0.08)}s`;
+      const card = document.getElementById(`card-opt-${i}`);
+      const text = document.getElementById(`opt-text-${i}`);
+      text.textContent = q.o[i] || '';
+      card.className = "hologram-option-card";
+      card.disabled = false;
     }
 
     this.startShotClock();
@@ -355,14 +569,14 @@ class LiquidFootyApp {
   startShotClock() {
     this.clearIntervalTimer();
     this.timerSeconds = 30;
-    this.updateTimerHUD();
+    this.updateClockHUD();
 
     this.timerInterval = setInterval(() => {
       this.timerSeconds--;
-      this.updateTimerHUD();
+      this.updateClockHUD();
 
       if (this.timerSeconds <= 5 && this.timerSeconds > 0) {
-        this.playTickTone();
+        this.playHeartbeat();
       }
 
       if (this.timerSeconds <= 0) {
@@ -379,111 +593,109 @@ class LiquidFootyApp {
     }
   }
 
-  updateTimerHUD() {
-    const islandTimer = document.getElementById('island-timer');
-    const badgeText = document.getElementById('header-badge-text');
+  updateClockHUD() {
+    const clockText = document.getElementById('hud-clock-text');
+    const clockPill = document.getElementById('hud-clock-pill');
+    clockText.textContent = `${this.timerSeconds}s`;
 
-    if (islandTimer) islandTimer.textContent = `${this.timerSeconds}s`;
-    if (badgeText) badgeText.textContent = `FootyQuiz • ${this.timerSeconds}s`;
-  }
-
-  // =========================================================
-  // 6. CARD CLICK & ANSWER VALIDATION
-  // =========================================================
-  handleCardClick(idx) {
-    if (!this.isAnsweringAllowed || this.isConfirmed) return;
-
-    this.selectedOptionIndex = idx;
-
-    // Toggle card selection visually
-    for (let i = 0; i < 4; i++) {
-      const card = document.getElementById(`card-${i + 1}`);
-      if (i === idx) {
-        card.classList.add('liquid-glass-selected');
-      } else {
-        card.classList.remove('liquid-glass-selected');
-      }
+    if (this.timerSeconds <= 5) {
+      clockPill.classList.add('danger');
+    } else {
+      clockPill.classList.remove('danger');
     }
-
-    this.playTone(440, 'sine', 0.08, 0.1);
-    document.getElementById('slide-text').textContent = "Confirm (Tap or Slide)";
   }
 
-  confirmAnswer() {
-    if (this.selectedOptionIndex === null || this.isConfirmed) return;
-    this.isConfirmed = true;
+  // =========================================================
+  // 6. ANSWER SELECTION & GOAL REACTION
+  // =========================================================
+  selectOption(idx) {
+    if (!this.isAnsweringAllowed) return;
     this.isAnsweringAllowed = false;
     this.clearIntervalTimer();
 
     const q = this.questions[this.currentIndex];
-    const chosenText = q.o[this.selectedOptionIndex];
+    const chosenText = q.o[idx];
     const isCorrect = (chosenText || '').trim().toLowerCase() === q.a.trim().toLowerCase();
 
-    // Reveal Green / Red Cards
-    for (let i = 0; i < 4; i++) {
-      const card = document.getElementById(`card-${i + 1}`);
-      const optText = q.o[i];
-      card.classList.remove('liquid-glass-selected');
+    // Trigger 3D Shootout in Stadium!
+    this.shootBall(isCorrect);
 
-      if ((optText || '').trim().toLowerCase() === q.a.trim().toLowerCase()) {
-        card.classList.add('liquid-glass-correct');
-      } else if (i === this.selectedOptionIndex && !isCorrect) {
-        card.classList.add('liquid-glass-wrong');
+    // VAR Check Lifeline Intervene
+    if (!isCorrect && this.varActive) {
+      this.varActive = false;
+      alert("🛡️ VAR INTERVENTION! Referee overturned the strike. Pick another option!");
+      document.getElementById(`card-opt-${idx}`).classList.add('eliminated');
+      this.isAnsweringAllowed = true;
+      this.startShotClock();
+      return;
+    }
+
+    // Highlight Cards
+    for (let i = 0; i < 4; i++) {
+      const card = document.getElementById(`card-opt-${i}`);
+      const opt = q.o[i];
+      card.disabled = true;
+
+      if ((opt || '').trim().toLowerCase() === q.a.trim().toLowerCase()) {
+        card.classList.add('correct');
+      } else if (i === idx && !isCorrect) {
+        card.classList.add('wrong');
+      } else {
+        card.classList.add('dimmed');
       }
     }
 
-    const drawer = document.getElementById('drawer-feedback');
-    const titleEl = document.getElementById('feedback-result-title');
-    const ptsBadge = document.getElementById('feedback-pts-badge');
-    const expEl = document.getElementById('feedback-explanation');
+    const drawer = document.getElementById('commentary-drawer');
+    const callout = document.getElementById('commentary-callout');
+    const pts = document.getElementById('commentary-pts');
+    const text = document.getElementById('commentary-text');
 
     if (isCorrect) {
       this.correctCount++;
       this.streak++;
       if (this.streak > this.maxStreak) this.maxStreak = this.streak;
 
-      // Speed bonus: up to +50 based on 30s
+      // Speed bonus
       const speedBonus = Math.floor((this.timerSeconds / 30) * 50);
-      const points = 100 + speedBonus + (this.streak * 10);
+      const points = 100 + speedBonus + (this.streak * 15);
       this.score += points;
 
-      this.playGoalCheer();
-      this.triggerGoalBallSpin();
+      callout.innerHTML = `<span style="color:#00f59b;">⚽ TOP BINS! GOOOAL</span>`;
+      pts.textContent = `+${points} PTS`;
+      pts.style.color = '#00f59b';
 
-      if (window.confetti) {
-        confetti({ particleCount: 40, spread: 55, origin: { y: 0.65 } });
+      // Update Streak Badge
+      if (this.streak >= 2) {
+        document.getElementById('hud-streak-badge').style.display = 'inline-flex';
+        document.getElementById('hud-streak-text').textContent = `${this.streak}x COMBO 🔥`;
       }
-
-      titleEl.innerHTML = `<span>GOOOAL! Correct</span>`;
-      titleEl.style.color = '#00f59b';
-      ptsBadge.textContent = `+${points} PTS`;
-      ptsBadge.style.color = '#00f59b';
 
     } else {
       this.wrongCount++;
       this.streak = 0;
+      document.getElementById('hud-streak-badge').style.display = 'none';
 
-      this.playMissTone();
-      this.triggerMissBallWobble();
-
-      titleEl.innerHTML = `<span>OFF TARGET!</span>`;
-      titleEl.style.color = '#ef4444';
-      ptsBadge.textContent = `+0 PTS`;
-      ptsBadge.style.color = '#ef4444';
+      callout.innerHTML = `<span style="color:#ef4444;">❌ OFF THE CROSSBAR!</span>`;
+      pts.textContent = `+0 PTS`;
+      pts.style.color = '#ef4444';
     }
 
-    expEl.textContent = q.e || `The correct answer is ${q.a}.`;
-    drawer.style.display = 'block';
+    document.getElementById('hud-score-text').textContent = this.score.toLocaleString();
+    text.textContent = `🎙️ Match Fact: ${q.e || `The correct answer is ${q.a}.`}`;
+
+    // Reveal commentary drawer
+    setTimeout(() => {
+      drawer.style.display = 'block';
+    }, 400);
   }
 
   handleTimeout() {
-    this.selectedOptionIndex = -1;
-    this.confirmAnswer();
+    this.selectOption(-1);
   }
 
   nextQuestion() {
     if (this.currentIndex >= this.questions.length - 1) {
-      this.finishQuiz();
+      this.finishMatch();
     } else {
       this.currentIndex++;
       this.renderQuestion();
@@ -491,98 +703,71 @@ class LiquidFootyApp {
   }
 
   // =========================================================
-  // 7. DRAGGABLE SLIDE-TO-CONFIRM + 1-TAP TRACK CONFIRM
+  // 7. ADDICTIVE MATCHDAY LIFELINES
   // =========================================================
-  initSliderDrag() {
-    const track = document.getElementById('slide-track');
-    const thumb = document.getElementById('slide-thumb');
-    if (!track || !thumb) return;
+  useLifeline5050() {
+    if (!this.lifelines.fifty || !this.isAnsweringAllowed) return;
+    this.lifelines.fifty = false;
+    document.getElementById('btn-ll-5050').disabled = true;
 
-    let isDragging = false;
-    let startX = 0;
-    let currentX = 0;
-    const maxDrag = 375 - 48 - 44 - 12; // ~271px
-
-    const onPointerDown = (e) => {
-      if (this.selectedOptionIndex === null || this.isConfirmed) return;
-      isDragging = true;
-      startX = e.clientX || (e.touches && e.touches[0].clientX);
-      thumb.setPointerCapture?.(e.pointerId);
-    };
-
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-      const deltaX = clientX - startX;
-      currentX = Math.max(0, Math.min(maxDrag, deltaX));
-      thumb.style.transform = `translateX(${currentX}px)`;
-    };
-
-    const onPointerUp = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-
-      // If dragged past 80%, snap to end and confirm!
-      if (currentX >= maxDrag * 0.8) {
-        thumb.style.transform = `translateX(${maxDrag}px)`;
-        setTimeout(() => this.confirmAnswer(), 80);
-      } else {
-        // Snap back
-        thumb.style.transform = `translateX(0px)`;
+    const q = this.questions[this.currentIndex];
+    const wrongIndices = [];
+    q.o.forEach((opt, idx) => {
+      if (opt.trim().toLowerCase() !== q.a.trim().toLowerCase()) {
+        wrongIndices.push(idx);
       }
-    };
+    });
 
-    thumb.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    // Eliminate 2 random wrong options
+    const toEliminate = wrongIndices.sort(() => 0.5 - Math.random()).slice(0, 2);
+    toEliminate.forEach(idx => {
+      document.getElementById(`card-opt-${idx}`).classList.add('eliminated');
+    });
+
+    this.playBallKickSound();
   }
 
-  handleTrackTap(e) {
-    if (this.selectedOptionIndex === null || this.isConfirmed) return;
-    const thumb = document.getElementById('slide-thumb');
-    const maxDrag = 375 - 48 - 44 - 12;
-    if (thumb) {
-      thumb.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
-      thumb.style.transform = `translateX(${maxDrag}px)`;
-      setTimeout(() => {
-        thumb.style.transition = '';
-        this.confirmAnswer();
-      }, 250);
-    } else {
-      this.confirmAnswer();
-    }
+  useLifelineFreeze() {
+    if (!this.lifelines.freeze || !this.isAnsweringAllowed) return;
+    this.lifelines.freeze = false;
+    document.getElementById('btn-ll-freeze').disabled = true;
+
+    this.timerSeconds += 15;
+    this.updateClockHUD();
+    document.getElementById('hud-clock-pill').style.borderColor = '#38bdf8';
+    setTimeout(() => document.getElementById('hud-clock-pill').style.borderColor = '', 1500);
+    this.playRefereeWhistle();
   }
 
-  resetSlider() {
-    const thumb = document.getElementById('slide-thumb');
-    const text = document.getElementById('slide-text');
-    if (thumb) thumb.style.transform = 'translateX(0px)';
-    if (text) text.textContent = "Done";
+  useLifelineVar() {
+    if (!this.lifelines.var || !this.isAnsweringAllowed) return;
+    this.lifelines.var = false;
+    this.varActive = true;
+    document.getElementById('btn-ll-var').disabled = true;
+    alert("🛡️ VAR Shield Active: If your next answer is wrong, referee will give you a second chance!");
   }
 
   // =========================================================
-  // 8. KEYBOARD SHORTCUTS (1, 2, 3, 4 & Space)
+  // 8. KEYBOARD HOTKEYS (1, 2, 3, 4 & Space)
   // =========================================================
-  initKeyboard() {
+  initKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
       if (['1', '2', '3', '4'].includes(e.key)) {
-        this.handleCardClick(parseInt(e.key) - 1);
+        this.selectOption(parseInt(e.key) - 1);
       }
       if (e.code === 'Space' || e.key === 'Enter') {
-        e.preventDefault();
-        if (document.getElementById('drawer-feedback').style.display === 'block') {
+        if (document.getElementById('commentary-drawer').style.display === 'block') {
+          e.preventDefault();
           this.nextQuestion();
-        } else if (this.selectedOptionIndex !== null && !this.isConfirmed) {
-          this.confirmAnswer();
         }
       }
     });
   }
 
   // =========================================================
-  // 9. MATCH REPORT & CERTIFIED FOOTBALL IQ
+  // 9. EA FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL
   // =========================================================
-  finishQuiz() {
+  finishMatch() {
     this.clearIntervalTimer();
     const modal = document.getElementById('modal-results');
     modal.style.display = 'flex';
@@ -590,61 +775,62 @@ class LiquidFootyApp {
     const total = this.correctCount + this.wrongCount;
     const acc = total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
 
-    // Certified IQ Formula
-    let iq = Math.round(85 + (acc * 0.45) + (this.score / 160) + (this.maxStreak * 2));
-    iq = Math.max(80, Math.min(160, iq));
+    // Overall Rating (FUT OVR 82 - 99)
+    let ovr = Math.round(82 + (acc * 0.12) + (this.score / 250) + (this.maxStreak * 0.8));
+    ovr = Math.max(80, Math.min(99, ovr));
 
     let title = "🏆 Ballon d'Or Tactician";
-    if (iq < 100) title = "📺 Casual Halftime Viewer";
-    else if (iq < 118) title = "🧢 Matchday Ticket Holder";
-    else if (iq < 132) title = "🔥 Premier League Regular";
-    else if (iq < 148) title = "⭐ Champions League Maestro";
+    if (ovr < 88) title = "🧢 Matchday Season Ticket Holder";
+    else if (ovr < 93) title = "🔥 Premier League Baller";
+    else if (ovr < 96) title = "⭐ Champions League Maestro";
 
-    document.getElementById('res-iq-num').textContent = iq;
-    document.getElementById('res-iq-title').textContent = title;
-    document.getElementById('res-score').textContent = this.score.toLocaleString();
-    document.getElementById('res-acc').textContent = `${acc}%`;
-    document.getElementById('res-combo').textContent = `${this.maxStreak} 🔥`;
+    document.getElementById('fut-rating-num').textContent = ovr;
+    document.getElementById('fut-rank-desc').textContent = title;
+    document.getElementById('fut-stat-score').textContent = this.score.toLocaleString();
+    document.getElementById('fut-stat-acc').textContent = `${acc}%`;
+    document.getElementById('fut-stat-streak').textContent = `${this.maxStreak} 🔥`;
+    document.getElementById('fut-stat-speed').textContent = `${Math.min(99, 85 + this.maxStreak * 2)} PAC`;
 
     if (window.confetti) {
-      confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+      confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 } });
     }
   }
 
-  restartQuiz() {
-    this.startQuiz();
+  resetGame() {
+    document.getElementById('modal-results').style.display = 'none';
+    this.startMatch();
   }
 
   shareScorecard() {
-    const iq = document.getElementById('res-iq-num').textContent;
-    const score = document.getElementById('res-score').textContent;
-    const text = `⚽ FootyQuiz Pro 3D\n🧠 Football IQ: ${iq}\n🎯 Score: ${score} PTS\n\nTest your ball knowledge: quiz.bhuwanadhikari007.com.np`;
+    const ovr = document.getElementById('fut-rating-num').textContent;
+    const score = document.getElementById('fut-stat-score').textContent;
+    const text = `⚽ FootyQuiz 3D Matchday\n👑 Certified Rating: ${ovr} OVR\n🎯 Match Score: ${score} PTS\n\nCan you beat my Ball Knowledge? Play now at: quiz.bhuwanadhikari007.com.np`;
 
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        alert("Scorecard copied to clipboard! Share it with your squad.");
+        alert("3D Card Scorecard copied to clipboard! Share it with your friends.");
       });
     } else {
       alert(text);
     }
   }
 
-  toggleIslandExpand() {
-    const island = document.getElementById('dynamic-island');
-    island.classList.toggle('expanded');
+  cycleCompetition() {
+    const comps = ["all", "FIFA World Cup", "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"];
+    const cur = comps.indexOf(this.activeCompetition);
+    this.activeCompetition = comps[(cur + 1) % comps.length];
+    document.getElementById('footer-comp-label').textContent = this.activeCompetition === 'all' ? 'All Leagues (10,000 Questions)' : this.activeCompetition;
+    this.startMatch();
   }
 
-  openCategoryMenu() {
-    const leagues = ["all", "FIFA World Cup", "Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"];
-    const curIdx = leagues.indexOf(this.activeCompetition);
-    const nextIdx = (curIdx + 1) % leagues.length;
-    this.activeCompetition = leagues[nextIdx];
-    
-    const label = document.getElementById('label-active-league');
-    if (label) label.textContent = this.activeCompetition === 'all' ? 'All Leagues' : this.activeCompetition;
-    this.startQuiz();
+  cycleDifficulty() {
+    const diffs = ["Very Easy", "Easy", "Medium", "Hard", "Very Hard", "Elite"];
+    const cur = diffs.indexOf(this.activeDifficulty);
+    this.activeDifficulty = diffs[(cur + 1) % diffs.length];
+    document.getElementById('footer-diff-label').textContent = `Tier: ${this.activeDifficulty}`;
+    this.startMatch();
   }
 }
 
-// Instantiate
-window.app = new LiquidFootyApp();
+// Global Single Instance
+window.app = new Footy3DBroadcastApp();
