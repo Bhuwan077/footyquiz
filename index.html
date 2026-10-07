@@ -28,8 +28,8 @@
     <!-- 1. TOP BROADCAST HUD -->
     <header class="top-broadcast-hud">
       
-      <!-- Brand Logo -->
-      <div class="brand-badge" onclick="app.resetGame()">
+      <!-- Brand Logo & Mode Trigger -->
+      <div class="brand-badge" onclick="app.openLobbyModal()">
         <div class="brand-logo-icon">
           <i data-lucide="trophy" style="width:20px; height:20px; color:#032b1a;"></i>
         </div>
@@ -38,7 +38,13 @@
         </div>
       </div>
 
-      <!-- Center HUD: Timer, Score, Streak -->
+      <!-- Mode Selector Pill -->
+      <button type="button" class="footer-btn" onclick="app.openLobbyModal()" id="btn-active-mode-pill" style="border-color:#00f59b; background:rgba(0,245,155,0.15); color:#00f59b;">
+        <span id="active-mode-label">💰 Millionaire Ladder</span>
+        <i data-lucide="chevron-down" style="width:13px; height:13px;"></i>
+      </button>
+
+      <!-- Center HUD: Timer, Score / Bank, Streak -->
       <div class="hud-center-stats">
         
         <!-- 30-Second Shot Clock -->
@@ -47,10 +53,10 @@
           <span class="clock-number" id="hud-clock-text">30s</span>
         </div>
 
-        <!-- Live Match Score -->
+        <!-- Live Match Prize / Score -->
         <div class="live-score-pill">
-          <span id="hud-score-text">0</span>
-          <small>PTS</small>
+          <span id="hud-score-text">$0</span>
+          <small id="hud-score-unit">BANK</small>
         </div>
 
         <!-- Streak Combo Multiplier -->
@@ -61,20 +67,27 @@
 
       </div>
 
-      <!-- Addictive Lifelines: 50:50, +15s Freeze, VAR Review -->
+      <!-- Matchday Lifelines: 50:50, Ask Fans, +15s Freeze, Walk Away -->
       <div class="lifelines-bar">
         <button class="lifeline-btn" id="btn-ll-5050" onclick="app.useLifeline5050()" title="50:50 - Remove 2 Wrong Options">
           <span>🎯</span>
           <span>50:50</span>
         </button>
+        <button class="lifeline-btn" id="btn-ll-fans" onclick="app.useLifelineFans()" title="Ask the Fans / AI Coach">
+          <span>👥</span>
+          <span>Fans</span>
+        </button>
         <button class="lifeline-btn" id="btn-ll-freeze" onclick="app.useLifelineFreeze()" title="Freeze - Add +15 Seconds">
           <span>⏱️</span>
           <span>+15s</span>
         </button>
-        <button class="lifeline-btn" id="btn-ll-var" onclick="app.useLifelineVar()" title="VAR - Second Chance Protection">
-          <span>🛡️</span>
-          <span>VAR</span>
+        
+        <!-- Walk Away / Bank Button (Visible in Millionaire Mode) -->
+        <button class="walk-away-btn" id="btn-walk-away" onclick="app.walkAwayAndBank()" title="Take Current Winnings & Conclude">
+          <span>💼</span>
+          <span>Walk Away</span>
         </button>
+
         <button class="lifeline-btn" id="btn-sound-toggle" onclick="app.toggleSound()" title="Toggle Stadium Audio">
           <i data-lucide="volume-2" style="width:14px; height:14px;" id="icon-sound"></i>
         </button>
@@ -82,70 +95,103 @@
 
     </header>
 
-    <!-- 2. MAIN MATCH ARENA -->
+    <!-- 2. MAIN MATCH ARENA WITH OPTIONAL MONEY TREE -->
     <main class="match-arena-stage">
 
-      <!-- Question Hero Card -->
-      <div class="question-hero-card">
-        <div class="meta-tags-row">
-          <div class="competition-pill">
-            <span style="width:7px; height:7px; border-radius:9999px; background:#00f59b; box-shadow:0 0 8px #00f59b;"></span>
-            <span id="competition-tag">FIFA World Cup</span>
-            <span style="color:rgba(255,255,255,0.4); margin:0 4px;">•</span>
-            <span id="question-counter" style="color:rgba(255,255,255,0.7);">Question 1 of 10</span>
+      <div class="millionaire-layout-container">
+
+        <!-- Question & Cards Column -->
+        <div style="flex:1; width:100%;">
+
+          <!-- Question Hero Card -->
+          <div class="question-hero-card">
+            <div class="meta-tags-row">
+              <div class="competition-pill">
+                <span style="width:7px; height:7px; border-radius:9999px; background:#00f59b; box-shadow:0 0 8px #00f59b;"></span>
+                <span id="competition-tag">FIFA World Cup</span>
+                <span style="color:rgba(255,255,255,0.4); margin:0 4px;">•</span>
+                <span id="question-counter" style="color:rgba(255,255,255,0.7);">Question 1 of 15 ($100)</span>
+              </div>
+              <span class="tier-badge" id="tier-tag">Very Easy</span>
+            </div>
+
+            <h2 class="question-title" id="question-title">
+              Loading 10,000 football questions into the 3D stadium...
+            </h2>
           </div>
-          <span class="tier-badge" id="tier-tag">Very Easy</span>
+
+          <!-- 4 Holographic 3D Option Cards -->
+          <div class="cards-3d-grid" id="options-container">
+            <!-- Card 0 -->
+            <button type="button" class="hologram-option-card" id="card-opt-0" onclick="app.selectOption(0)">
+              <span class="card-key-pill">[1]</span>
+              <span class="card-answer-text" id="opt-text-0">Option 1</span>
+            </button>
+
+            <!-- Card 1 -->
+            <button type="button" class="hologram-option-card" id="card-opt-1" onclick="app.selectOption(1)">
+              <span class="card-key-pill">[2]</span>
+              <span class="card-answer-text" id="opt-text-1">Option 2</span>
+            </button>
+
+            <!-- Card 2 -->
+            <button type="button" class="hologram-option-card" id="card-opt-2" onclick="app.selectOption(2)">
+              <span class="card-key-pill">[3]</span>
+              <span class="card-answer-text" id="opt-text-2">Option 3</span>
+            </button>
+
+            <!-- Card 3 -->
+            <button type="button" class="hologram-option-card" id="card-opt-3" onclick="app.selectOption(3)">
+              <span class="card-key-pill">[4]</span>
+              <span class="card-answer-text" id="opt-text-3">Option 4</span>
+            </button>
+          </div>
+
+          <!-- Match Commentary & Next Question Drawer -->
+          <div class="commentary-drawer" id="commentary-drawer">
+            <div class="commentary-header">
+              <div class="commentary-callout" id="commentary-callout">
+                <!-- Dynamically populated -->
+              </div>
+              <div class="commentary-pts" id="commentary-pts">+180 PTS</div>
+            </div>
+
+            <p class="commentary-text" id="commentary-text">
+              Match fact goes here.
+            </p>
+
+            <button type="button" class="next-action-btn" onclick="app.nextQuestion()">
+              <span>Next Question (Press Space)</span>
+              <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
+            </button>
+          </div>
+
         </div>
 
-        <h2 class="question-title" id="question-title">
-          Loading 10,000 football questions into the 3D stadium...
-        </h2>
-      </div>
-
-      <!-- 4 Holographic 3D Option Cards -->
-      <div class="cards-3d-grid" id="options-container">
-        <!-- Card 0 -->
-        <button type="button" class="hologram-option-card" id="card-opt-0" onclick="app.selectOption(0)">
-          <span class="card-key-pill">[1]</span>
-          <span class="card-answer-text" id="opt-text-0">Option 1</span>
-        </button>
-
-        <!-- Card 1 -->
-        <button type="button" class="hologram-option-card" id="card-opt-1" onclick="app.selectOption(1)">
-          <span class="card-key-pill">[2]</span>
-          <span class="card-answer-text" id="opt-text-1">Option 2</span>
-        </button>
-
-        <!-- Card 2 -->
-        <button type="button" class="hologram-option-card" id="card-opt-2" onclick="app.selectOption(2)">
-          <span class="card-key-pill">[3]</span>
-          <span class="card-answer-text" id="opt-text-2">Option 3</span>
-        </button>
-
-        <!-- Card 3 -->
-        <button type="button" class="hologram-option-card" id="card-opt-3" onclick="app.selectOption(3)">
-          <span class="card-key-pill">[4]</span>
-          <span class="card-answer-text" id="opt-text-3">Option 4</span>
-        </button>
-      </div>
-
-      <!-- Match Commentary & Next Question Drawer -->
-      <div class="commentary-drawer" id="commentary-drawer">
-        <div class="commentary-header">
-          <div class="commentary-callout" id="commentary-callout">
-            <!-- Dynamically populated -->
+        <!-- WHO WANTS TO BE A FOOTBALL MILLIONAIRE MONEY TREE (15 RUNGS) -->
+        <aside class="money-tree-sidebar" id="money-tree-sidebar">
+          <div class="money-tree-header">
+            <span>🏆</span>
+            <span>Ball Knowledge Tree</span>
           </div>
-          <div class="commentary-pts" id="commentary-pts">+180 PTS</div>
-        </div>
+          
+          <div class="money-rung milestone" id="rung-15"><span class="rung-num">15</span><span class="rung-amount">$1,000,000 (Elite)</span></div>
+          <div class="money-rung" id="rung-14"><span class="rung-num">14</span><span class="rung-amount">$500,000</span></div>
+          <div class="money-rung" id="rung-13"><span class="rung-num">13</span><span class="rung-amount">$250,000</span></div>
+          <div class="money-rung" id="rung-12"><span class="rung-num">12</span><span class="rung-amount">$125,000</span></div>
+          <div class="money-rung" id="rung-11"><span class="rung-num">11</span><span class="rung-amount">$64,000</span></div>
+          <div class="money-rung milestone" id="rung-10"><span class="rung-num">10</span><span class="rung-amount">🛡️ $32,000 (Safe)</span></div>
+          <div class="money-rung" id="rung-9"><span class="rung-num">9</span><span class="rung-amount">$16,000</span></div>
+          <div class="money-rung" id="rung-8"><span class="rung-num">8</span><span class="rung-amount">$8,000</span></div>
+          <div class="money-rung" id="rung-7"><span class="rung-num">7</span><span class="rung-amount">$4,000</span></div>
+          <div class="money-rung" id="rung-6"><span class="rung-num">6</span><span class="rung-amount">$2,000</span></div>
+          <div class="money-rung milestone" id="rung-5"><span class="rung-num">5</span><span class="rung-amount">🛡️ $1,000 (Safe)</span></div>
+          <div class="money-rung" id="rung-4"><span class="rung-num">4</span><span class="rung-amount">$500</span></div>
+          <div class="money-rung" id="rung-3"><span class="rung-num">3</span><span class="rung-amount">$300</span></div>
+          <div class="money-rung" id="rung-2"><span class="rung-num">2</span><span class="rung-amount">$200</span></div>
+          <div class="money-rung active" id="rung-1"><span class="rung-num">1</span><span class="rung-amount">$100 (Very Easy)</span></div>
+        </aside>
 
-        <p class="commentary-text" id="commentary-text">
-          Match fact goes here.
-        </p>
-
-        <button type="button" class="next-action-btn" onclick="app.nextQuestion()">
-          <span>Next Question (Press Space)</span>
-          <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
-        </button>
       </div>
 
     </main>
@@ -153,14 +199,11 @@
     <!-- 3. BROADCAST FOOTER & LEAGUE FILTER -->
     <footer class="broadcast-footer">
       <div style="display:flex; align-items:center; gap:8px;">
-        <button type="button" class="footer-btn" onclick="app.cycleCompetition()">
-          <i data-lucide="filter" style="width:13px; height:13px;"></i>
-          <span id="footer-comp-label">All Leagues (10,000 Questions)</span>
+        <button type="button" class="footer-btn" onclick="app.openLobbyModal()">
+          <i data-lucide="sliders" style="width:13px; height:13px;"></i>
+          <span>Mode & Filters</span>
         </button>
-        <button type="button" class="footer-btn" onclick="app.cycleDifficulty()">
-          <i data-lucide="gauge" style="width:13px; height:13px;"></i>
-          <span id="footer-diff-label">Tier: Very Easy</span>
-        </button>
+        <span style="font-size:12px; color:rgba(255,255,255,0.4);" id="footer-summary-label">Format: Who Wants to Be a Millionaire • Ladder to $1,000,000</span>
       </div>
 
       <div style="display:flex; align-items:center; gap:10px;">
@@ -174,7 +217,140 @@
   </div>
 
   <!-- ========================================================= -->
-  <!-- 4. EA SPORTS FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL  -->
+  <!-- 4. LOBBY / MODE SELECTOR MODAL                            -->
+  <!-- ========================================================= -->
+  <div class="modal-overlay" id="modal-lobby" style="display:none;">
+    <div class="lobby-dialog">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div class="brand-title" style="font-size:22px;">CHOOSE YOUR <span>GAME FORMAT</span></div>
+        <button type="button" class="footer-btn" onclick="app.closeLobbyModal()" style="padding:6px 10px;">✕</button>
+      </div>
+
+      <div class="lobby-subtitle">
+        Select how you want to test your ball knowledge across 10,000 verified football questions.
+      </div>
+
+      <!-- Mode Cards Grid -->
+      <div class="mode-cards-grid">
+        
+        <!-- Mode 1: Football Millionaire -->
+        <div class="mode-select-card active" id="card-mode-millionaire" onclick="app.selectModeInLobby('millionaire')">
+          <div style="display:flex; align-items:center;">
+            <div class="mode-icon-box" style="background:rgba(245,158,11,0.2); color:#f59e0b;">💰</div>
+            <div class="mode-card-info">
+              <h4>Football Millionaire (Money Ladder)</h4>
+              <p>Climbs from <strong>Very Easy ➔ Elite</strong> over 15 questions. Safety nets at $1,000 and $32,000. Walk away anytime!</p>
+            </div>
+          </div>
+          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b;" class="mode-check-icon"></i>
+        </div>
+
+        <!-- Mode 2: Custom Difficulty Match -->
+        <div class="mode-select-card" id="card-mode-custom" onclick="app.selectModeInLobby('custom')">
+          <div style="display:flex; align-items:center;">
+            <div class="mode-icon-box" style="background:rgba(0,245,155,0.2); color:#00f59b;">🎯</div>
+            <div class="mode-card-info">
+              <h4>Custom Match (Choose Your Tier)</h4>
+              <p>Play 10 questions locked to your chosen difficulty (e.g. Very Easy, Hard, or Elite) and competition.</p>
+            </div>
+          </div>
+          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b; display:none;" class="mode-check-icon"></i>
+        </div>
+
+        <!-- Mode 3: Sudden Death -->
+        <div class="mode-select-card" id="card-mode-survival" onclick="app.selectModeInLobby('survival')">
+          <div style="display:flex; align-items:center;">
+            <div class="mode-icon-box" style="background:rgba(239,68,68,0.2); color:#ef4444;">⚡</div>
+            <div class="mode-card-info">
+              <h4>Sudden Death Shootout</h4>
+              <p>1 wrong strike = Game Over! How many consecutive penalties can you score?</p>
+            </div>
+          </div>
+          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b; display:none;" class="mode-check-icon"></i>
+        </div>
+
+      </div>
+
+      <!-- Custom Settings (Visible when Custom mode selected) -->
+      <div class="custom-filter-section" id="lobby-custom-settings">
+        <div class="filter-section-title">
+          <i data-lucide="gauge" style="width:14px; height:14px;"></i>
+          <span>Choose Difficulty Tier:</span>
+        </div>
+        <div class="filter-pill-grid" id="lobby-diff-pills">
+          <button type="button" class="filter-pill active" onclick="app.setDifficultyInLobby('Very Easy')">🟢 Very Easy (Casual)</button>
+          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Easy')">🔵 Easy</button>
+          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Medium')">🟡 Medium</button>
+          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Hard')">🟠 Hard</button>
+          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Very Hard')">🔴 Very Hard</button>
+          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Elite')">👑 Elite</button>
+        </div>
+
+        <div class="filter-section-title">
+          <i data-lucide="trophy" style="width:14px; height:14px;"></i>
+          <span>Choose Competition:</span>
+        </div>
+        <div class="filter-pill-grid" id="lobby-comp-pills">
+          <button type="button" class="filter-pill active" onclick="app.setCompetitionInLobby('all')">🌍 All Leagues</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('FIFA World Cup')">🏆 World Cup</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Premier League')">🦁 Premier League</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('La Liga')">🇪🇸 La Liga</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Serie A')">🇮🇹 Serie A</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Bundesliga')">🇩🇪 Bundesliga</button>
+          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Ligue 1')">🇫🇷 Ligue 1</button>
+        </div>
+      </div>
+
+      <!-- Kickoff Button -->
+      <button type="button" class="next-action-btn" onclick="app.applyLobbyAndStart()">
+        <span>Start Game In This Mode</span>
+        <i data-lucide="play" style="width:16px; height:16px;"></i>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 5. ASK THE FANS / AI COACH MODAL                          -->
+  <!-- ========================================================= -->
+  <div class="fan-poll-modal" id="modal-fan-poll">
+    <div class="fan-poll-box">
+      <div style="font-size:20px; font-weight:900; font-family:'Montserrat',sans-serif; color:#00f59b; margin-bottom:4px;">
+        👥 STADIUM FAN POLL
+      </div>
+      <p style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:16px;">
+        Results from 10,000 surveyed football fans:
+      </p>
+
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">[1]</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-0" style="width:0%;"></div></div>
+        <span class="poll-bar-pct" id="poll-pct-0">0%</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">[2]</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-1" style="width:0%;"></div></div>
+        <span class="poll-bar-pct" id="poll-pct-1">0%</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">[3]</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-2" style="width:0%;"></div></div>
+        <span class="poll-bar-pct" id="poll-pct-2">0%</span>
+      </div>
+      <div class="poll-bar-row">
+        <span class="poll-bar-label">[4]</span>
+        <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-3" style="width:0%;"></div></div>
+        <span class="poll-bar-pct" id="poll-pct-3">0%</span>
+      </div>
+
+      <button type="button" class="next-action-btn" style="margin-top:16px;" onclick="document.getElementById('modal-fan-poll').style.display='none'">
+        <span>Got It, Back to Match</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- 6. EA SPORTS FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL  -->
   <!-- ========================================================= -->
   <div class="fut-card-modal" id="modal-results">
     <div class="fut-card-container">
@@ -203,8 +379,8 @@
           <!-- Stats Radar Grid -->
           <div class="fut-stats-grid">
             <div class="fut-stat-item">
-              <span style="color:rgba(255,255,255,0.6);">SCORE</span>
-              <span class="fut-stat-num" id="fut-stat-score">2,850</span>
+              <span style="color:rgba(255,255,255,0.6);" id="fut-label-earnings">EARNINGS</span>
+              <span class="fut-stat-num" id="fut-stat-score">$1,000,000</span>
             </div>
             <div class="fut-stat-item">
               <span style="color:rgba(255,255,255,0.6);">ACCURACY</span>

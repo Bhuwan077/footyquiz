@@ -664,3 +664,336 @@ body {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.2);
 }
+
+/* =========================================================
+   MILLIONAIRE MONEY TREE & LOBBY MODE SELECTOR
+   ========================================================= */
+
+/* LOBBY / MODE SELECTOR MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 6, 14, 0.92);
+  backdrop-filter: blur(20px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.lobby-dialog {
+  max-width: 620px;
+  width: 100%;
+  background: linear-gradient(135deg, rgba(10, 18, 36, 0.95) 0%, rgba(5, 10, 22, 0.98) 100%);
+  border: 1.5px solid rgba(0, 245, 155, 0.35);
+  border-radius: 28px;
+  padding: 30px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 245, 155, 0.15);
+  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lobby-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 24px;
+  color: #ffffff;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.lobby-subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.mode-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-select-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.mode-select-card:hover {
+  background: rgba(0, 245, 155, 0.12);
+  border-color: #00f59b;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 245, 155, 0.2);
+}
+
+.mode-select-card.active {
+  background: rgba(0, 245, 155, 0.18);
+  border-color: #00f59b;
+  box-shadow: 0 0 20px rgba(0, 245, 155, 0.3);
+}
+
+.mode-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-right: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mode-card-info h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+
+.mode-card-info p {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.35;
+}
+
+/* CUSTOM FILTER DRAWER (Difficulty & League) */
+.custom-filter-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.filter-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #00f59b;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-pill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-pill {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-pill:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.filter-pill.active {
+  background: #00f59b;
+  color: #032b1a;
+  border-color: #00f59b;
+  box-shadow: 0 0 12px rgba(0, 245, 155, 0.4);
+}
+
+/* MILLIONAIRE MONEY TREE SIDEBAR / PANEL */
+.millionaire-layout-container {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.money-tree-sidebar {
+  width: 240px;
+  background: linear-gradient(145deg, rgba(8, 15, 30, 0.92) 0%, rgba(4, 9, 20, 0.96) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.3);
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(245, 158, 11, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .money-tree-sidebar {
+    display: none; /* toggleable on mobile via HUD button */
+  }
+}
+
+.money-tree-header {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #f59e0b;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.money-rung {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.2s ease;
+}
+
+.money-rung.active {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0.15) 100%);
+  border: 1px solid #f59e0b;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.4);
+  transform: scale(1.02);
+}
+
+.money-rung.passed {
+  color: #00f59b;
+  text-decoration: none;
+}
+
+.money-rung.milestone {
+  color: #fce7a2;
+  font-weight: 800;
+}
+
+.money-rung.milestone.active {
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(252, 231, 162, 0.6);
+}
+
+.rung-num {
+  font-family: 'Montserrat', sans-serif;
+  width: 20px;
+}
+
+.rung-amount {
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* BANK / WALK AWAY BUTTON */
+.walk-away-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.walk-away-btn:hover {
+  background: rgba(245, 158, 11, 0.3);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* FAN POLL / AI COACH MODAL */
+.fan-poll-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(12px);
+  z-index: 110;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.fan-poll-box {
+  max-width: 380px;
+  width: 100%;
+  background: #091122;
+  border: 1.5px solid rgba(0, 245, 155, 0.4);
+  border-radius: 24px;
+  padding: 24px;
+  text-align: center;
+}
+
+.poll-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.poll-bar-label {
+  width: 24px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #00f59b;
+}
+
+.poll-bar-track {
+  flex: 1;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.poll-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00f59b, #38bdf8);
+  border-radius: 8px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.poll-bar-pct {
+  width: 38px;
+  font-weight: 800;
+  font-size: 12px;
+  text-align: right;
+  color: #ffffff;
+}
