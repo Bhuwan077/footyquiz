@@ -43,9 +43,10 @@ class FootyEditorialApp {
       freeze: true
     };
 
-    // 30-Second Shot Clock
+    // 30-Second Shot Clock & Auto-Advance
     this.timerSeconds = 30;
     this.timerInterval = null;
+    this.autoAdvanceTimer = null;
 
     // Sound
     this.soundEnabled = true;
@@ -509,6 +510,10 @@ class FootyEditorialApp {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
     const clockPill = document.getElementById('shot-clock-pill');
     if (clockPill) clockPill.classList.remove('urgent');
   }
@@ -544,6 +549,7 @@ class FootyEditorialApp {
     const expBar = document.getElementById('explanation-bar');
     const expTitle = document.getElementById('explanation-title');
     const expBody = document.getElementById('explanation-body');
+    const nextBtnText = document.getElementById('btn-next-text');
 
     if (isCorrect) {
       this.correctCount++;
@@ -557,7 +563,7 @@ class FootyEditorialApp {
         this.currentBank = prizeWon;
         this.score += prizeWon;
         if (expTitle) {
-          expTitle.innerHTML = `<span style="color:var(--teal-primary);">✓ Correct! You Banked $${prizeWon.toLocaleString()}</span>`;
+          expTitle.innerHTML = `<span style="color:var(--teal-primary);">✓ Correct! Banked $${prizeWon.toLocaleString()}</span>`;
         }
       } else {
         const speedBonus = Math.floor((this.timerSeconds / 30) * 50);
@@ -569,13 +575,23 @@ class FootyEditorialApp {
       }
 
       if (window.confetti) {
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        confetti({ particleCount: 45, spread: 55, origin: { y: 0.7 } });
       }
+
+      if (nextBtnText) nextBtnText.textContent = "Loading Next Challenge...";
+
+      // GO DIRECTLY TO NEXT QUESTION WITHOUT WAITING FOR USER TO CLICK!
+      if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = setTimeout(() => {
+        this.nextQuestion();
+      }, 950);
 
     } else {
       this.wrongCount++;
       this.streak = 0;
       this.playMissTone();
+
+      if (nextBtnText) nextBtnText.textContent = "Continue";
 
       if (this.currentMode === 'ballknowledge') {
         const guaranteed = this.getGuaranteedMilestone(this.currentQuestionIndex);
@@ -584,10 +600,21 @@ class FootyEditorialApp {
           expTitle.innerHTML = `<span style="color:var(--terracotta);">✕ Incorrect! You Fall Back to $${guaranteed.toLocaleString()}</span>`;
         }
         this.isGameOver = true;
+
+        // Auto-show results after 1.8s
+        if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
+        this.autoAdvanceTimer = setTimeout(() => {
+          this.triggerLoadingAndShowResults();
+        }, 1800);
       } else {
         if (expTitle) {
           expTitle.innerHTML = `<span style="color:var(--terracotta);">✕ Off the Target!</span>`;
         }
+        // In custom mode, auto-advance after 1.4s
+        if (this.autoAdvanceTimer) clearTimeout(this.autoAdvanceTimer);
+        this.autoAdvanceTimer = setTimeout(() => {
+          this.nextQuestion();
+        }, 1400);
       }
     }
 
@@ -602,6 +629,10 @@ class FootyEditorialApp {
   }
 
   nextQuestion() {
+    if (this.autoAdvanceTimer) {
+      clearTimeout(this.autoAdvanceTimer);
+      this.autoAdvanceTimer = null;
+    }
     // In Ball Knowledge mode: continues UNLIMITED unless game is over (wrong answer)
     if (this.isGameOver || (this.currentMode === 'custom' && this.currentQuestionIndex >= 9)) {
       this.triggerLoadingAndShowResults();
