@@ -3,419 +3,440 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FootyQuiz Pro - Next-Gen 3D Ball Knowledge Arena</title>
+  <title>FootyQuiz Pro - Editorial Ball Knowledge & Diagnostic Arena</title>
 
-  <!-- Google & Web Fonts -->
+  <!-- Google & Web Fonts (Fraunces & Plus Jakarta Sans) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Three.js, Confetti, and Lucide Icons -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Lucide Icons & Confetti -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- 3D THREE.JS REALISTIC STADIUM & SOCCER BALL BACKGROUND -->
-  <canvas id="three-stadium-canvas"></canvas>
+  <!-- BACKGROUND BLURRED COLOR BLOBS (Terracotta top-left, Teal bottom-right) -->
+  <div class="bg-ambient-blobs">
+    <div class="blob-terracotta"></div>
+    <div class="blob-teal"></div>
+  </div>
 
-  <!-- BROADCAST OVERLAY -->
-  <div class="broadcast-wrapper">
+  <!-- MAIN EDITORIAL CONTAINER -->
+  <div class="editorial-shell">
 
-    <!-- 1. TOP BROADCAST HUD -->
-    <header class="top-broadcast-hud">
+    <!-- 1. QUIZ HEADER -->
+    <header class="quiz-header">
       
-      <!-- Brand Logo & Mode Trigger -->
-      <div class="brand-badge" onclick="app.openLobbyModal()">
-        <div class="brand-logo-icon">
-          <i data-lucide="trophy" style="width:20px; height:20px; color:#032b1a;"></i>
+      <div class="header-top-row">
+        <!-- Branding on Left -->
+        <div class="header-branding" onclick="app.openLobbyModal()">
+          <div class="brand-icon-box">
+            <i data-lucide="trophy" style="width:20px; height:20px;"></i>
+          </div>
+          <div>
+            <div class="brand-editorial-text">FOOTYQUIZ • EDITORIAL</div>
+            <div class="brand-editorial-sub">10,000 Verified Football Questions</div>
+          </div>
         </div>
-        <div>
-          <div class="brand-title">FOOTY<span>QUIZ</span><span class="brand-tag">3D LIVE</span></div>
+
+        <!-- Right Controls: Mode Chip, Counter, Sound, Leaderboard -->
+        <div class="header-actions">
+          
+          <button type="button" class="editorial-btn" onclick="app.openLobbyModal()" id="btn-mode-indicator">
+            <span id="active-mode-label">💰 Unlimited Millionaire</span>
+            <i data-lucide="chevron-down" style="width:13px; height:13px; color:var(--terracotta);"></i>
+          </button>
+
+          <!-- Step / Counter Pill -->
+          <div class="step-counter-pill" id="step-counter-pill">
+            Question 1 • Prize: $100
+          </div>
+
+          <button type="button" class="editorial-btn" onclick="app.toggleSound()" id="btn-sound" title="Toggle Sound">
+            <i data-lucide="volume-2" style="width:14px; height:14px; color:var(--teal-primary);" id="icon-sound"></i>
+          </button>
+
+          <button type="button" class="editorial-btn" onclick="app.openLeaderboardModal()" title="Global Standings">
+            <i data-lucide="award" style="width:14px; height:14px; color:var(--terracotta);"></i>
+            <span class="hidden sm:inline">Leaderboard</span>
+          </button>
         </div>
       </div>
 
-      <!-- Mode Selector Pill -->
-      <button type="button" class="footer-btn" onclick="app.openLobbyModal()" id="btn-active-mode-pill" style="border-color:#00f59b; background:rgba(0,245,155,0.15); color:#00f59b;">
-        <span id="active-mode-label">💰 Millionaire Ladder</span>
-        <i data-lucide="chevron-down" style="width:13px; height:13px;"></i>
-      </button>
-
-      <!-- Center HUD: Timer, Score / Bank, Streak -->
-      <div class="hud-center-stats">
-        
-        <!-- 30-Second Shot Clock -->
-        <div class="shot-clock-pill" id="hud-clock-pill">
-          <i data-lucide="clock" style="width:15px; height:15px; color:#00f59b;" id="hud-clock-icon"></i>
-          <span class="clock-number" id="hud-clock-text">30s</span>
-        </div>
-
-        <!-- Live Match Prize / Score -->
-        <div class="live-score-pill">
-          <span id="hud-score-text">$0</span>
-          <small id="hud-score-unit">BANK</small>
-        </div>
-
-        <!-- Streak Combo Multiplier -->
-        <div class="streak-flame-badge" id="hud-streak-badge" style="display:none;">
-          <i data-lucide="flame" style="width:13px; height:13px; fill:#f59e0b; color:#f59e0b;"></i>
-          <span id="hud-streak-text">2x COMBO</span>
-        </div>
-
-      </div>
-
-      <!-- Matchday Lifelines: 50:50, Ask Fans, +15s Freeze, Walk Away -->
-      <div class="lifelines-bar">
-        <button class="lifeline-btn" id="btn-ll-5050" onclick="app.useLifeline5050()" title="50:50 - Remove 2 Wrong Options">
-          <span>🎯</span>
-          <span>50:50</span>
-        </button>
-        <button class="lifeline-btn" id="btn-ll-fans" onclick="app.useLifelineFans()" title="Ask the Fans / AI Coach">
-          <span>👥</span>
-          <span>Fans</span>
-        </button>
-        <button class="lifeline-btn" id="btn-ll-freeze" onclick="app.useLifelineFreeze()" title="Freeze - Add +15 Seconds">
-          <span>⏱️</span>
-          <span>+15s</span>
-        </button>
-        
-        <!-- Walk Away / Bank Button (Visible in Millionaire Mode) -->
-        <button class="walk-away-btn" id="btn-walk-away" onclick="app.walkAwayAndBank()" title="Take Current Winnings & Conclude">
-          <span>💼</span>
-          <span>Walk Away</span>
-        </button>
-
-        <button class="lifeline-btn" id="btn-sound-toggle" onclick="app.toggleSound()" title="Toggle Stadium Audio">
-          <i data-lucide="volume-2" style="width:14px; height:14px;" id="icon-sound"></i>
-        </button>
+      <!-- Full-Width 8px Progress Bar with Teal Fill -->
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-bar-fill" style="width: 5%;"></div>
       </div>
 
     </header>
 
-    <!-- 2. MAIN MATCH ARENA WITH OPTIONAL MONEY TREE -->
-    <main class="match-arena-stage">
+    <!-- 2. QUESTION SECTION -->
+    <main class="question-section">
 
-      <div class="millionaire-layout-container">
-
-        <!-- Question & Cards Column -->
-        <div style="flex:1; width:100%;">
-
-          <!-- Question Hero Card -->
-          <div class="question-hero-card">
-            <div class="meta-tags-row">
-              <div class="competition-pill">
-                <span style="width:7px; height:7px; border-radius:9999px; background:#00f59b; box-shadow:0 0 8px #00f59b;"></span>
-                <span id="competition-tag">FIFA World Cup</span>
-                <span style="color:rgba(255,255,255,0.4); margin:0 4px;">•</span>
-                <span id="question-counter" style="color:rgba(255,255,255,0.7);">Question 1 of 15 ($100)</span>
-              </div>
-              <span class="tier-badge" id="tier-tag">Very Easy</span>
-            </div>
-
-            <h2 class="question-title" id="question-title">
-              Loading 10,000 football questions into the 3D stadium...
-            </h2>
-          </div>
-
-          <!-- 4 Holographic 3D Option Cards -->
-          <div class="cards-3d-grid" id="options-container">
-            <!-- Card 0 -->
-            <button type="button" class="hologram-option-card" id="card-opt-0" onclick="app.selectOption(0)">
-              <span class="card-key-pill">[1]</span>
-              <span class="card-answer-text" id="opt-text-0">Option 1</span>
-            </button>
-
-            <!-- Card 1 -->
-            <button type="button" class="hologram-option-card" id="card-opt-1" onclick="app.selectOption(1)">
-              <span class="card-key-pill">[2]</span>
-              <span class="card-answer-text" id="opt-text-1">Option 2</span>
-            </button>
-
-            <!-- Card 2 -->
-            <button type="button" class="hologram-option-card" id="card-opt-2" onclick="app.selectOption(2)">
-              <span class="card-key-pill">[3]</span>
-              <span class="card-answer-text" id="opt-text-2">Option 3</span>
-            </button>
-
-            <!-- Card 3 -->
-            <button type="button" class="hologram-option-card" id="card-opt-3" onclick="app.selectOption(3)">
-              <span class="card-key-pill">[4]</span>
-              <span class="card-answer-text" id="opt-text-3">Option 4</span>
-            </button>
-          </div>
-
-          <!-- Match Commentary & Next Question Drawer -->
-          <div class="commentary-drawer" id="commentary-drawer">
-            <div class="commentary-header">
-              <div class="commentary-callout" id="commentary-callout">
-                <!-- Dynamically populated -->
-              </div>
-              <div class="commentary-pts" id="commentary-pts">+180 PTS</div>
-            </div>
-
-            <p class="commentary-text" id="commentary-text">
-              Match fact goes here.
-            </p>
-
-            <button type="button" class="next-action-btn" onclick="app.nextQuestion()">
-              <span>Next Question (Press Space)</span>
-              <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
-            </button>
-          </div>
-
+      <!-- Centered Text Stack -->
+      <div class="question-text-stack">
+        <div class="question-category-tag" id="question-category-tag">
+          <span style="width:6px; height:6px; border-radius:9999px; background:var(--terracotta);"></span>
+          <span id="category-league-label">FIFA World Cup</span>
+          <span style="opacity:0.4;">•</span>
+          <span id="category-diff-label">Very Easy</span>
         </div>
 
-        <!-- WHO WANTS TO BE A FOOTBALL MILLIONAIRE MONEY TREE (15 RUNGS) -->
-        <aside class="money-tree-sidebar" id="money-tree-sidebar">
-          <div class="money-tree-header">
-            <span>🏆</span>
-            <span>Ball Knowledge Tree</span>
-          </div>
-          
-          <div class="money-rung milestone" id="rung-15"><span class="rung-num">15</span><span class="rung-amount">$1,000,000 (Elite)</span></div>
-          <div class="money-rung" id="rung-14"><span class="rung-num">14</span><span class="rung-amount">$500,000</span></div>
-          <div class="money-rung" id="rung-13"><span class="rung-num">13</span><span class="rung-amount">$250,000</span></div>
-          <div class="money-rung" id="rung-12"><span class="rung-num">12</span><span class="rung-amount">$125,000</span></div>
-          <div class="money-rung" id="rung-11"><span class="rung-num">11</span><span class="rung-amount">$64,000</span></div>
-          <div class="money-rung milestone" id="rung-10"><span class="rung-num">10</span><span class="rung-amount">🛡️ $32,000 (Safe)</span></div>
-          <div class="money-rung" id="rung-9"><span class="rung-num">9</span><span class="rung-amount">$16,000</span></div>
-          <div class="money-rung" id="rung-8"><span class="rung-num">8</span><span class="rung-amount">$8,000</span></div>
-          <div class="money-rung" id="rung-7"><span class="rung-num">7</span><span class="rung-amount">$4,000</span></div>
-          <div class="money-rung" id="rung-6"><span class="rung-num">6</span><span class="rung-amount">$2,000</span></div>
-          <div class="money-rung milestone" id="rung-5"><span class="rung-num">5</span><span class="rung-amount">🛡️ $1,000 (Safe)</span></div>
-          <div class="money-rung" id="rung-4"><span class="rung-num">4</span><span class="rung-amount">$500</span></div>
-          <div class="money-rung" id="rung-3"><span class="rung-num">3</span><span class="rung-amount">$300</span></div>
-          <div class="money-rung" id="rung-2"><span class="rung-num">2</span><span class="rung-amount">$200</span></div>
-          <div class="money-rung active" id="rung-1"><span class="rung-num">1</span><span class="rung-amount">$100 (Very Easy)</span></div>
-        </aside>
+        <h1 class="question-heading" id="question-heading">
+          Which nation won the 2022 FIFA World Cup in Qatar?
+        </h1>
 
+        <p class="question-description" id="question-description">
+          Select the correct answer to bank your prize money and advance up the ladder.
+        </p>
+      </div>
+
+      <!-- Lifelines Bar: 50:50, Ask Fans, Freeze Time, Walk Away -->
+      <div class="editorial-lifelines-bar">
+        <button type="button" class="lifeline-pill" id="btn-ll-5050" onclick="app.useLifeline5050()">
+          <span>🎯</span>
+          <span>50:50</span>
+        </button>
+        <button type="button" class="lifeline-pill" id="btn-ll-fans" onclick="app.useLifelineFans()">
+          <span>👥</span>
+          <span>Ask Fans</span>
+        </button>
+        <button type="button" class="lifeline-pill" id="btn-ll-freeze" onclick="app.useLifelineFreeze()">
+          <span>⏱️</span>
+          <span>Freeze (+15s)</span>
+        </button>
+        <button type="button" class="lifeline-pill" id="btn-walk-away" onclick="app.walkAwayAndBank()" style="color:var(--terracotta); border-color:rgba(216,90,48,0.25);">
+          <span>💼</span>
+          <span>Walk Away ($0)</span>
+        </button>
+      </div>
+
+      <!-- 2-Column Grid of Selection Cards (rounded-3xl, p-6, 48px icon container) -->
+      <div class="selection-grid-2col" id="selection-grid">
+        
+        <!-- Card 0 -->
+        <button type="button" class="option-card-btn anim-stagger-1" id="option-btn-0" onclick="app.handleSelectOption(0)">
+          <div class="card-icon-container">A</div>
+          <div class="card-text-stack">
+            <div class="card-title-text" id="opt-title-0">Argentina</div>
+            <div class="card-subtitle-text">Option 1 • Press [1]</div>
+          </div>
+        </button>
+
+        <!-- Card 1 -->
+        <button type="button" class="option-card-btn anim-stagger-2" id="option-btn-1" onclick="app.handleSelectOption(1)">
+          <div class="card-icon-container">B</div>
+          <div class="card-text-stack">
+            <div class="card-title-text" id="opt-title-1">France</div>
+            <div class="card-subtitle-text">Option 2 • Press [2]</div>
+          </div>
+        </button>
+
+        <!-- Card 2 -->
+        <button type="button" class="option-card-btn anim-stagger-3" id="option-btn-2" onclick="app.handleSelectOption(2)">
+          <div class="card-icon-container">C</div>
+          <div class="card-text-stack">
+            <div class="card-title-text" id="opt-title-2">Croatia</div>
+            <div class="card-subtitle-text">Option 3 • Press [3]</div>
+          </div>
+        </button>
+
+        <!-- Card 3 -->
+        <button type="button" class="option-card-btn anim-stagger-4" id="option-btn-3" onclick="app.handleSelectOption(3)">
+          <div class="card-icon-container">D</div>
+          <div class="card-text-stack">
+            <div class="card-title-text" id="opt-title-3">Morocco</div>
+            <div class="card-subtitle-text">Option 4 • Press [4]</div>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- Explanation & Advance Bar -->
+      <div class="explanation-bar" id="explanation-bar">
+        <div class="explanation-title" id="explanation-title">
+          <span>✓ Tactical Analysis Confirmed</span>
+        </div>
+        <p class="explanation-body" id="explanation-body">
+          Match fact explanation appears here.
+        </p>
+        <button type="button" class="editorial-btn editorial-btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:14px;" onclick="app.nextQuestion()">
+          <span>Next Tactical Challenge (Press Space)</span>
+          <i data-lucide="arrow-right" style="width:16px; height:16px;"></i>
+        </button>
       </div>
 
     </main>
 
-    <!-- 3. BROADCAST FOOTER & LEAGUE FILTER -->
-    <footer class="broadcast-footer">
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button type="button" class="footer-btn" onclick="app.openLobbyModal()">
-          <i data-lucide="sliders" style="width:13px; height:13px;"></i>
-          <span>Mode & Filters</span>
-        </button>
-        <span style="font-size:12px; color:rgba(255,255,255,0.4);" id="footer-summary-label">Format: Who Wants to Be a Millionaire • Ladder to $1,000,000</span>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:10px;">
-        <a href="https://bhuwanadhikari007.com.np/footyhub/" class="footer-btn">
-          <i data-lucide="external-link" style="width:13px; height:13px;"></i>
-          <span>FootyHub</span>
-        </a>
-      </div>
-    </footer>
-
   </div>
 
-  <!-- ========================================================= -->
-  <!-- 4. LOBBY / MODE SELECTOR MODAL                            -->
-  <!-- ========================================================= -->
-  <div class="modal-overlay" id="modal-lobby" style="display:none;">
-    <div class="lobby-dialog">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <div class="brand-title" style="font-size:22px;">CHOOSE YOUR <span>GAME FORMAT</span></div>
-        <button type="button" class="footer-btn" onclick="app.closeLobbyModal()" style="padding:6px 10px;">✕</button>
-      </div>
+  <!-- 3. UNLIMITED MILLIONAIRE FLOATING MONEY LADDER DRAWER -->
+  <aside class="money-ladder-drawer" id="money-ladder-drawer">
+    <div class="ladder-header">💰 PRIZE LADDER</div>
+    <div id="ladder-rungs-list">
+      <!-- Dynamically generated rungs -->
+    </div>
+  </aside>
 
-      <div class="lobby-subtitle">
-        Select how you want to test your ball knowledge across 10,000 verified football questions.
+  <!-- 4. DEDICATED LOADING TRANSITION SCREEN -->
+  <div class="loading-transition-screen" id="loading-screen">
+    <div class="loading-icon-wrapper">
+      <div class="loading-ping-pulse"></div>
+      <div class="loading-static-icon">
+        <i data-lucide="compass" style="width:28px; height:28px;"></i>
       </div>
+    </div>
+    <p class="loading-analysis-text" id="loading-status-text">
+      Analyzing ball knowledge diagnostic matrix & tactical statistics...
+    </p>
+  </div>
 
-      <!-- Mode Cards Grid -->
-      <div class="mode-cards-grid">
+  <!-- 5. RESULT DASHBOARD & PLAYCARD MODAL -->
+  <div class="result-dashboard-modal" id="modal-results">
+    <div class="result-card-40px">
+      
+      <div class="result-scrollable-body">
         
-        <!-- Mode 1: Football Millionaire -->
-        <div class="mode-select-card active" id="card-mode-millionaire" onclick="app.selectModeInLobby('millionaire')">
-          <div style="display:flex; align-items:center;">
-            <div class="mode-icon-box" style="background:rgba(245,158,11,0.2); color:#f59e0b;">💰</div>
-            <div class="mode-card-info">
-              <h4>Football Millionaire (Money Ladder)</h4>
-              <p>Climbs from <strong>Very Easy ➔ Elite</strong> over 15 questions. Safety nets at $1,000 and $32,000. Walk away anytime!</p>
-            </div>
-          </div>
-          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b;" class="mode-check-icon"></i>
+        <!-- Hero Area (Teal Background with Dot-Grid Pattern) -->
+        <div class="result-hero-section">
+          <div class="result-hero-badge">OFFICIAL DIAGNOSTIC PROFILE</div>
+          <h2 class="result-hero-title" id="result-profile-title">Ball Knowledge Tactician</h2>
+          <p class="result-hero-sub" id="result-profile-sub">
+            Your performance across matchday history, tournament trivia, and tactical metrics has been certified.
+          </p>
         </div>
 
-        <!-- Mode 2: Custom Difficulty Match -->
-        <div class="mode-select-card" id="card-mode-custom" onclick="app.selectModeInLobby('custom')">
-          <div style="display:flex; align-items:center;">
-            <div class="mode-icon-box" style="background:rgba(0,245,155,0.2); color:#00f59b;">🎯</div>
-            <div class="mode-card-info">
-              <h4>Custom Match (Choose Your Tier)</h4>
-              <p>Play 10 questions locked to your chosen difficulty (e.g. Very Easy, Hard, or Elite) and competition.</p>
-            </div>
+        <!-- 3-Column Stats Grid (Cream Cards displaying Large Bold Scores) -->
+        <div class="result-stats-3col">
+          <div class="stat-cream-card">
+            <div class="stat-card-label" id="stat-label-1">Prize Banked</div>
+            <div class="stat-card-value" id="stat-val-bank">$1,000,000</div>
           </div>
-          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b; display:none;" class="mode-check-icon"></i>
+          <div class="stat-cream-card">
+            <div class="stat-card-label">Accuracy</div>
+            <div class="stat-card-value" id="stat-val-acc" style="color:var(--teal-primary);">94%</div>
+          </div>
+          <div class="stat-cream-card">
+            <div class="stat-card-label">Longest Streak</div>
+            <div class="stat-card-value" id="stat-val-streak">12 🔥</div>
+          </div>
         </div>
 
-        <!-- Mode 3: Sudden Death -->
-        <div class="mode-select-card" id="card-mode-survival" onclick="app.selectModeInLobby('survival')">
-          <div style="display:flex; align-items:center;">
-            <div class="mode-icon-box" style="background:rgba(239,68,68,0.2); color:#ef4444;">⚡</div>
-            <div class="mode-card-info">
-              <h4>Sudden Death Shootout</h4>
-              <p>1 wrong strike = Game Over! How many consecutive penalties can you score?</p>
+        <!-- Detailed Tactical Analysis Text Block -->
+        <div class="detailed-analysis-block">
+          <div class="analysis-heading">Tactical Analysis & Breakdown</div>
+          <p class="analysis-body-text" id="analysis-body-text">
+            You exhibited elite ball knowledge with outstanding recognition of superstar careers, World Cup history, and domestic league rivalries. Your quick decision-making under the 30-second shot clock ranks in the top 5% of tested football analysts.
+          </p>
+        </div>
+
+        <!-- COLLECTIBLE PLAYCARD (Generated for EVERYONE, signed in or not!) -->
+        <div class="playcard-wrapper" id="playcard-export-target">
+          <div class="playcard-inner">
+            <div class="playcard-watermark">FOOTY</div>
+            
+            <div class="playcard-header-row">
+              <div>
+                <span class="playcard-rank-badge" id="playcard-badge">Certified Tactician</span>
+                <div class="playcard-identity-title" id="playcard-name">Guest Baller</div>
+                <div class="playcard-tactical-role" id="playcard-role">Verified Ball Knowledge Card</div>
+              </div>
+              <div class="playcard-ovr-box">
+                <span class="playcard-ovr-num" id="playcard-ovr">96</span>
+                <span class="playcard-ovr-label">OVR</span>
+              </div>
+            </div>
+
+            <div class="playcard-metrics-row">
+              <div class="playcard-metric-item">
+                <div class="playcard-metric-key">Prize / Score</div>
+                <div class="playcard-metric-val" id="playcard-score">$1,000,000</div>
+              </div>
+              <div class="playcard-metric-item">
+                <div class="playcard-metric-key">Accuracy</div>
+                <div class="playcard-metric-val" id="playcard-acc">94%</div>
+              </div>
+              <div class="playcard-metric-item">
+                <div class="playcard-metric-key">Streak</div>
+                <div class="playcard-metric-val" id="playcard-streak">12 🔥</div>
+              </div>
+              <div class="playcard-metric-item">
+                <div class="playcard-metric-key">Rating Tier</div>
+                <div class="playcard-metric-val" id="playcard-tier">World Class</div>
+              </div>
             </div>
           </div>
-          <i data-lucide="check-circle" style="width:20px; height:20px; color:#00f59b; display:none;" class="mode-check-icon"></i>
+        </div>
+
+        <!-- Actions for Playcard -->
+        <div style="display:flex; justify-content:center; gap:12px; margin-bottom:20px; padding:0 32px;">
+          <button type="button" class="editorial-btn editorial-btn-primary" onclick="app.sharePlaycard()">
+            <i data-lucide="share-2" style="width:14px; height:14px;"></i>
+            <span>Share My Playcard</span>
+          </button>
+          <button type="button" class="editorial-btn" onclick="app.resetQuiz()">
+            <i data-lucide="rotate-ccw" style="width:14px; height:14px;"></i>
+            <span>Play Again</span>
+          </button>
+        </div>
+
+        <!-- GMAIL SIGN-IN BOX (Required for Global Leaderboard Submission) -->
+        <div class="gmail-verify-box" id="gmail-leaderboard-box">
+          <div class="gmail-verify-title">
+            <i data-lucide="shield-check" style="width:16px; height:16px; color:var(--teal-primary);"></i>
+            <span>Record Score on the Official Leaderboard</span>
+          </div>
+          <p class="gmail-verify-desc">
+            To prevent bot submissions and maintain competitive integrity, sign in with your Gmail to claim your verified spot on the Global Leaderboard and represent your club.
+          </p>
+          <button type="button" class="btn-google-sign-in" onclick="app.handleGoogleSignInForLeaderboard()">
+            <svg class="w-4 h-4" width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+              <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+            </svg>
+            <span id="google-btn-text">Sign In with Gmail & Save Score</span>
+          </button>
+        </div>
+
+        <!-- FEATURED PRODUCT / FOOTYHUB RECOMMENDATION CARD -->
+        <div class="product-rec-card">
+          <div class="product-rec-image-side">
+            <i data-lucide="radio" style="width:34px; height:34px;"></i>
+          </div>
+          <div class="product-rec-text-side">
+            <div class="product-indication-label">RECOMMENDED PLATFORM</div>
+            <div class="product-rec-title">FootyHub Matchday Companion</div>
+            <div class="product-rec-price">100% Free Live Match Tracking & Fixtures</div>
+            <a href="https://bhuwanadhikari007.com.np/footyhub/" target="_blank" class="product-cta-btn">
+              <span>Explore FootyHub</span>
+              <i data-lucide="arrow-right" style="width:14px; height:14px;"></i>
+            </a>
+          </div>
         </div>
 
       </div>
 
-      <!-- Custom Settings (Visible when Custom mode selected) -->
-      <div class="custom-filter-section" id="lobby-custom-settings">
-        <div class="filter-section-title">
-          <i data-lucide="gauge" style="width:14px; height:14px;"></i>
-          <span>Choose Difficulty Tier:</span>
-        </div>
-        <div class="filter-pill-grid" id="lobby-diff-pills">
-          <button type="button" class="filter-pill active" onclick="app.setDifficultyInLobby('Very Easy')">🟢 Very Easy (Casual)</button>
-          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Easy')">🔵 Easy</button>
-          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Medium')">🟡 Medium</button>
-          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Hard')">🟠 Hard</button>
-          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Very Hard')">🔴 Very Hard</button>
-          <button type="button" class="filter-pill" onclick="app.setDifficultyInLobby('Elite')">👑 Elite</button>
+    </div>
+  </div>
+
+  <!-- 6. MODE SELECTION LOBBY MODAL -->
+  <div class="fan-poll-modal" id="modal-lobby">
+    <div class="fan-poll-box" style="max-width:540px; text-align:left;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="serif-heading" style="font-size:22px;">Choose Game Format</h3>
+        <button type="button" class="editorial-btn" onclick="app.closeLobbyModal()" style="padding:4px 8px;">✕</button>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+        
+        <!-- Mode 1: Unlimited Millionaire -->
+        <div class="stat-cream-card" id="lobby-mode-millionaire" onclick="app.setLobbyMode('millionaire')" style="text-align:left; cursor:pointer; padding:16px; border:2px solid var(--teal-primary);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:800; font-size:15px; color:var(--teal-primary);">💰 Unlimited Millionaire</div>
+            <span style="font-size:10px; font-weight:800; background:var(--teal-light); color:var(--teal-primary); padding:2px 8px; border-radius:9999px;">ENDLESS</span>
+          </div>
+          <p style="font-size:12px; color:var(--graphite-60); margin-top:4px;">
+            Unlimited questions scaling from $100 up to $10,000,000+! Random mix of Easy, Medium, Hard, and Elite questions. Safety nets at $1,000 and $32,000. Walk away anytime.
+          </p>
         </div>
 
-        <div class="filter-section-title">
-          <i data-lucide="trophy" style="width:14px; height:14px;"></i>
-          <span>Choose Competition:</span>
+        <!-- Mode 2: Custom Difficulty -->
+        <div class="stat-cream-card" id="lobby-mode-custom" onclick="app.setLobbyMode('custom')" style="text-align:left; cursor:pointer; padding:16px; border:1px solid var(--border-soft);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:800; font-size:15px; color:var(--teal-primary);">🎯 Custom Match (Choose Difficulty)</div>
+          </div>
+          <p style="font-size:12px; color:var(--graphite-60); margin-top:4px;">
+            Select your preferred tier (Very Easy, Medium, Elite) and league for a rapid 10-question sprint.
+          </p>
         </div>
-        <div class="filter-pill-grid" id="lobby-comp-pills">
-          <button type="button" class="filter-pill active" onclick="app.setCompetitionInLobby('all')">🌍 All Leagues</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('FIFA World Cup')">🏆 World Cup</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Premier League')">🦁 Premier League</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('La Liga')">🇪🇸 La Liga</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Serie A')">🇮🇹 Serie A</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Bundesliga')">🇩🇪 Bundesliga</button>
-          <button type="button" class="filter-pill" onclick="app.setCompetitionInLobby('Ligue 1')">🇫🇷 Ligue 1</button>
+
+      </div>
+
+      <!-- Custom Settings (when Custom is active) -->
+      <div id="lobby-custom-subsettings" style="display:none; margin-bottom:16px;">
+        <div style="font-size:11px; font-weight:800; color:var(--teal-primary); text-transform:uppercase; margin-bottom:6px;">Choose Difficulty:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px;" id="pills-diff">
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Very Easy')">🟢 Very Easy</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Easy')">🔵 Easy</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Medium')">🟡 Medium</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Hard')">🟠 Hard</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Very Hard')">🔴 Very Hard</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomDifficulty('Elite')">👑 Elite</button>
+        </div>
+
+        <div style="font-size:11px; font-weight:800; color:var(--teal-primary); text-transform:uppercase; margin-bottom:6px;">Choose Competition:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;" id="pills-comp">
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('all')">🌍 All Leagues</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('FIFA World Cup')">🏆 World Cup</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('Premier League')">🦁 Premier League</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('La Liga')">🇪🇸 La Liga</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('Serie A')">🇮🇹 Serie A</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('Bundesliga')">🇩🇪 Bundesliga</button>
+          <button type="button" class="editorial-btn" onclick="app.setCustomCompetition('Ligue 1')">🇫🇷 Ligue 1</button>
         </div>
       </div>
 
-      <!-- Kickoff Button -->
-      <button type="button" class="next-action-btn" onclick="app.applyLobbyAndStart()">
-        <span>Start Game In This Mode</span>
-        <i data-lucide="play" style="width:16px; height:16px;"></i>
+      <button type="button" class="editorial-btn editorial-btn-primary" style="width:100%; justify-content:center; padding:12px;" onclick="app.confirmLobbyAndStart()">
+        <span>Confirm & Start Challenge</span>
       </button>
 
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- 5. ASK THE FANS / AI COACH MODAL                          -->
-  <!-- ========================================================= -->
+  <!-- 7. FAN POLL LIFELINE MODAL -->
   <div class="fan-poll-modal" id="modal-fan-poll">
     <div class="fan-poll-box">
-      <div style="font-size:20px; font-weight:900; font-family:'Montserrat',sans-serif; color:#00f59b; margin-bottom:4px;">
-        👥 STADIUM FAN POLL
-      </div>
-      <p style="font-size:12px; color:rgba(255,255,255,0.6); margin-bottom:16px;">
-        Results from 10,000 surveyed football fans:
+      <h3 class="serif-heading" style="font-size:22px; margin-bottom:4px;">Stadium Fan Survey</h3>
+      <p style="font-size:12px; color:var(--graphite-60); margin-bottom:16px;">
+        10,000 football fans surveyed in real time:
       </p>
 
       <div class="poll-bar-row">
-        <span class="poll-bar-label">[1]</span>
+        <span class="poll-bar-label">A</span>
         <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-0" style="width:0%;"></div></div>
         <span class="poll-bar-pct" id="poll-pct-0">0%</span>
       </div>
       <div class="poll-bar-row">
-        <span class="poll-bar-label">[2]</span>
+        <span class="poll-bar-label">B</span>
         <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-1" style="width:0%;"></div></div>
         <span class="poll-bar-pct" id="poll-pct-1">0%</span>
       </div>
       <div class="poll-bar-row">
-        <span class="poll-bar-label">[3]</span>
+        <span class="poll-bar-label">C</span>
         <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-2" style="width:0%;"></div></div>
         <span class="poll-bar-pct" id="poll-pct-2">0%</span>
       </div>
       <div class="poll-bar-row">
-        <span class="poll-bar-label">[4]</span>
+        <span class="poll-bar-label">D</span>
         <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-3" style="width:0%;"></div></div>
         <span class="poll-bar-pct" id="poll-pct-3">0%</span>
       </div>
 
-      <button type="button" class="next-action-btn" style="margin-top:16px;" onclick="document.getElementById('modal-fan-poll').style.display='none'">
-        <span>Got It, Back to Match</span>
+      <button type="button" class="editorial-btn editorial-btn-primary" style="width:100%; justify-content:center; margin-top:16px;" onclick="document.getElementById('modal-fan-poll').style.display='none'">
+        <span>Back to Match</span>
       </button>
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- 6. EA SPORTS FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL  -->
-  <!-- ========================================================= -->
-  <div class="fut-card-modal" id="modal-results">
-    <div class="fut-card-container">
-      
-      <div style="font-size:12px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:8px;">
-        MATCH FULL TIME • PACK UNLOCKED
+  <!-- 8. LEADERBOARD MODAL -->
+  <div class="fan-poll-modal" id="modal-leaderboard">
+    <div class="fan-poll-box" style="max-width:540px; text-align:left; max-height:85vh; display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="serif-heading" style="font-size:22px;">Global Standings</h3>
+        <button type="button" class="editorial-btn" onclick="app.closeLeaderboardModal()" style="padding:4px 8px;">✕</button>
       </div>
+      <p style="font-size:12px; color:var(--graphite-60); margin-bottom:12px;">
+        Verified Ball Knowledge rankings (Gmail Authenticated).
+      </p>
 
-      <!-- 3D Tilting FUT ICON Card -->
-      <div class="fut-icon-card" id="fut-card">
-        <div class="fut-card-inner">
-          
-          <div class="fut-header-row">
-            <div class="fut-ovr-box">
-              <div class="fut-ovr-number" id="fut-rating-num">96</div>
-              <div class="fut-pos">BALLER</div>
-            </div>
-            <div class="fut-club-badge">
-              👑
-            </div>
-          </div>
-
-          <div class="fut-player-title" id="fut-player-name">BALL KNOWLEDGE ICON</div>
-          <div class="fut-rank-title" id="fut-rank-desc">🏆 Ballon d'Or Tactician</div>
-
-          <!-- Stats Radar Grid -->
-          <div class="fut-stats-grid">
-            <div class="fut-stat-item">
-              <span style="color:rgba(255,255,255,0.6);" id="fut-label-earnings">EARNINGS</span>
-              <span class="fut-stat-num" id="fut-stat-score">$1,000,000</span>
-            </div>
-            <div class="fut-stat-item">
-              <span style="color:rgba(255,255,255,0.6);">ACCURACY</span>
-              <span class="fut-stat-num" id="fut-stat-acc">90%</span>
-            </div>
-            <div class="fut-stat-item">
-              <span style="color:rgba(255,255,255,0.6);">MAX STREAK</span>
-              <span class="fut-stat-num" id="fut-stat-streak">7 🔥</span>
-            </div>
-            <div class="fut-stat-item">
-              <span style="color:rgba(255,255,255,0.6);">SPEED</span>
-              <span class="fut-stat-num" id="fut-stat-speed">95 PAC</span>
-            </div>
-          </div>
-
-        </div>
+      <div id="leaderboard-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding-right:4px;">
+        <!-- Dynamic Leaderboard Items -->
       </div>
-
-      <!-- Post-Match Actions -->
-      <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px;">
-        <button type="button" class="next-action-btn" onclick="app.resetGame()">
-          <i data-lucide="rotate-ccw" style="width:16px; height:16px;"></i>
-          <span>Play Another Match</span>
-        </button>
-
-        <button type="button" class="footer-btn" style="justify-content:center; padding:12px; font-size:13px;" onclick="app.shareScorecard()">
-          <i data-lucide="share-2" style="width:15px; height:15px;"></i>
-          <span>Share Certified 3D Card</span>
-        </button>
-
-        <a href="https://bhuwanadhikari007.com.np/footyhub/" class="footer-btn" style="justify-content:center; padding:10px; font-size:12px; color:#4ade80;">
-          <span>Back to FootyHub ⚽</span>
-        </a>
-      </div>
-
     </div>
   </div>
 

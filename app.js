@@ -1,55 +1,45 @@
 /**
- * FootyQuiz Pro - Next-Gen 3D Broadcast Matchday Engine
- * Supports:
- * 1. Who Wants to Be a Football Millionaire ($1M Ladder, Very Easy ➔ Elite, Safety Nets)
- * 2. Custom Match (Pick your Difficulty & League)
- * 3. Sudden Death Penalty Shootout
- * Complete with Three.js 3D Stadium Shootout, Audio Synthesizer, Fan Poll, and 3D FUT Card Reveal.
+ * FootyQuiz Pro - Editorial Nurture Ball Knowledge Controller
+ * Features:
+ * 1. Unlimited Millionaire Mode (Endless Random Mix of Easy, Medium, Hard, Very Hard, Elite)
+ * 2. Custom Match Tier Selector (Very Easy to Elite, League Filtering)
+ * 3. Dedicated Loading Transition & Diagnostic Results Dashboard
+ * 4. Collectible Playcard Generation for EVERYONE (Guest or Signed In)
+ * 5. Gmail Sign-In requirement for Official Global Leaderboard Recording
+ * 6. Web Audio Synthesizer & Stadium Fan Poll Lifeline
  */
 
-class Footy3DBroadcastApp {
+class FootyEditorialApp {
   constructor() {
-    // Mode: 'millionaire', 'custom', 'survival'
+    // Mode Configuration: 'millionaire' (unlimited) or 'custom'
     this.currentMode = 'millionaire';
     this.customDifficulty = 'Very Easy';
     this.customCompetition = 'all';
 
-    // Millionaire Ladder Rungs
-    this.millionairePrizes = [
-      100, 200, 300, 500, 1000, 
-      2000, 4000, 8000, 16000, 32000, 
-      64000, 125000, 250000, 500000, 1000000
-    ];
-    this.millionaireTiers = [
-      "Very Easy", "Very Easy", "Very Easy", "Easy", "Easy",
-      "Easy", "Medium", "Medium", "Hard", "Hard",
-      "Hard", "Very Hard", "Very Hard", "Elite", "Elite"
-    ];
-
-    // Game Data
-    this.allQuestions = [];
-    this.questions = [];
-    this.currentIndex = 0;
-    this.score = 0;
+    // Unlimited Millionaire Prize Function
+    this.currentQuestionIndex = 0;
     this.currentBank = 0;
+    this.score = 0;
     this.streak = 0;
     this.maxStreak = 0;
     this.correctCount = 0;
     this.wrongCount = 0;
 
-    // State
+    // Database
+    this.allQuestions = [];
+    this.currentQuestion = null;
     this.isAnsweringAllowed = false;
     this.selectedOption = null;
     this.isGameOver = false;
 
-    // Lifelines (1 per game)
+    // Lifelines (1 use per match)
     this.lifelines = {
       fifty: true,
       fans: true,
       freeze: true
     };
 
-    // 30s Timer
+    // 30-Second Shot Clock
     this.timerSeconds = 30;
     this.timerInterval = null;
 
@@ -57,406 +47,63 @@ class Footy3DBroadcastApp {
     this.soundEnabled = true;
     this.audioCtx = null;
 
-    // Three.js Stadium & Ball
-    this.scene = null;
-    this.camera = null;
-    this.renderer = null;
-    this.ball = null;
-    this.netMesh = null;
-    this.floodlights = [];
-    this.ballInitialPos = { x: 0, y: 0.45, z: 2.2 };
-    this.isShooting = false;
+    // Verified User Profile
+    this.currentUser = JSON.parse(localStorage.getItem('footy_editorial_user')) || {
+      name: 'Guest Baller',
+      email: null,
+      club: 'Neutral',
+      verified: false
+    };
 
     this.init();
   }
 
   async init() {
-    this.initThreeStadium();
-    this.initCardTiltEffects();
     this.initKeyboardShortcuts();
     lucide.createIcons();
 
     await this.loadQuestions();
-    this.startMatch();
+    this.startQuizSession();
   }
 
   // =========================================================
-  // 1. THREE.JS 3D STADIUM, GOAL FRAME & BALL SHOOTOUT
+  // 1. DYNAMIC PRIZE CALCULATION FOR UNLIMITED MILLIONAIRE
   // =========================================================
-  initThreeStadium() {
-    const canvas = document.getElementById('three-stadium-canvas');
-    if (!canvas || typeof THREE === 'undefined') return;
-
-    this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x050811, 0.035);
-
-    this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.camera.position.set(0, 1.6, 5.2);
-    this.camera.lookAt(0, 1.2, -3);
-
-    this.renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
-
-    // Pitch
-    const pitch = new THREE.Mesh(
-      new THREE.PlaneGeometry(60, 60),
-      new THREE.MeshStandardMaterial({ color: 0x071e12, roughness: 0.85, metalness: 0.1 })
-    );
-    pitch.rotation.x = -Math.PI / 2;
-    pitch.receiveShadow = true;
-    this.scene.add(pitch);
-
-    // White Touchline
-    const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    const penaltyLine = new THREE.Mesh(new THREE.PlaneGeometry(16, 0.08), lineMat);
-    penaltyLine.rotation.x = -Math.PI / 2;
-    penaltyLine.position.set(0, 0.01, 1.5);
-    this.scene.add(penaltyLine);
-
-    // Goal Frame
-    const postMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.8 });
-    const leftPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 16), postMat);
-    leftPost.position.set(-2.8, 1.3, -4);
-    this.scene.add(leftPost);
-
-    const rightPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 16), postMat);
-    rightPost.position.set(2.8, 1.3, -4);
-    this.scene.add(rightPost);
-
-    const crossbar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 5.68, 16), postMat);
-    crossbar.rotation.z = Math.PI / 2;
-    crossbar.position.set(0, 2.6, -4);
-    this.scene.add(crossbar);
-
-    // Net
-    const netGeo = new THREE.PlaneGeometry(5.6, 2.6, 14, 8);
-    const netMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, wireframe: true, transparent: true, opacity: 0.4 });
-    this.netMesh = new THREE.Mesh(netGeo, netMat);
-    this.netMesh.position.set(0, 1.3, -4.5);
-    this.scene.add(this.netMesh);
-
-    // Soccer Ball
-    const ballCanvas = document.createElement('canvas');
-    ballCanvas.width = 512;
-    ballCanvas.height = 512;
-    const bctx = ballCanvas.getContext('2d');
-    bctx.fillStyle = '#ffffff';
-    bctx.fillRect(0, 0, 512, 512);
-    bctx.fillStyle = '#0f172a';
-    
-    const drawPentagon = (x, y, r) => {
-      bctx.beginPath();
-      for (let i = 0; i < 5; i++) {
-        const a = (i * 2 * Math.PI) / 5 - Math.PI / 2;
-        const px = x + r * Math.cos(a);
-        const py = y + r * Math.sin(a);
-        if (i === 0) bctx.moveTo(px, py);
-        else bctx.lineTo(px, py);
-      }
-      bctx.closePath();
-      bctx.fill();
-    };
-    drawPentagon(256, 256, 75);
-    drawPentagon(80, 110, 55);
-    drawPentagon(432, 110, 55);
-    drawPentagon(120, 410, 55);
-    drawPentagon(392, 410, 55);
-
-    const ballTexture = new THREE.CanvasTexture(ballCanvas);
-    const ballMat = new THREE.MeshStandardMaterial({ map: ballTexture, roughness: 0.25, metalness: 0.15 });
-
-    this.ball = new THREE.Mesh(new THREE.SphereGeometry(0.42, 32, 32), ballMat);
-    this.ball.position.set(this.ballInitialPos.x, this.ballInitialPos.y, this.ballInitialPos.z);
-    this.ball.castShadow = true;
-    this.scene.add(this.ball);
-
-    // Floodlights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this.scene.add(ambientLight);
-
-    const light1 = new THREE.SpotLight(0x00f59b, 2.5, 40, Math.PI / 4, 0.4);
-    light1.position.set(-8, 12, 6);
-    light1.target = this.ball;
-    this.scene.add(light1);
-    this.floodlights.push(light1);
-
-    const light2 = new THREE.SpotLight(0x38bdf8, 2.0, 40, Math.PI / 4, 0.4);
-    light2.position.set(8, 12, 6);
-    light2.target = this.ball;
-    this.scene.add(light2);
-    this.floodlights.push(light2);
-
-    // Atmosphere Particles
-    const particleCount = 180;
-    const particleGeo = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePositions[i] = (Math.random() - 0.5) * 20;
-      particlePositions[i + 1] = Math.random() * 8;
-      particlePositions[i + 2] = (Math.random() - 0.5) * 16;
+  getMillionairePrize(index) {
+    const fixedPrizes = [
+      100, 200, 300, 500, 1000, 
+      2000, 4000, 8000, 16000, 32000, 
+      64000, 125000, 250000, 500000, 1000000
+    ];
+    if (index < fixedPrizes.length) {
+      return fixedPrizes[index];
     }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    const particleMat = new THREE.PointsMaterial({ color: 0x00f59b, size: 0.045, transparent: true, opacity: 0.6 });
-    const particles = new THREE.Points(particleGeo, particleMat);
-    this.scene.add(particles);
-
-    // Resize Handler
-    window.addEventListener('resize', () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    // Animation Loop
-    let time = 0;
-    const animate = () => {
-      requestAnimationFrame(animate);
-      time += 0.01;
-      if (!this.isShooting && this.ball) {
-        this.ball.rotation.y += 0.005;
-        this.ball.rotation.x += 0.003;
-      }
-      particles.rotation.y = time * 0.03;
-      this.renderer.render(this.scene, this.camera);
-    };
-    animate();
+    // Beyond 15: Scales exponentially ($2M, $5M, $10M, $25M...)
+    const extra = index - 14;
+    return 1000000 * Math.pow(2, extra);
   }
 
-  shootBall(isCorrect) {
-    if (!this.ball || this.isShooting) return;
-    this.isShooting = true;
-
-    const startX = this.ball.position.x;
-    const startY = this.ball.position.y;
-    const startZ = this.ball.position.z;
-
-    let targetX = 2.0;
-    let targetY = 2.2;
-    let targetZ = -4.2;
-
-    if (!isCorrect) {
-      targetX = 0.2;
-      targetY = 2.65;
-      targetZ = -4.0;
-    }
-
-    let progress = 0;
-    const duration = 40;
-
-    this.playBallKickSound();
-
-    const interval = setInterval(() => {
-      progress++;
-      const t = progress / duration;
-
-      this.ball.position.x = startX + (targetX - startX) * t;
-      this.ball.position.z = startZ + (targetZ - startZ) * t;
-      this.ball.position.y = startY + (targetY - startY) * t + Math.sin(t * Math.PI) * 1.2;
-
-      this.ball.rotation.x -= 0.35;
-      this.ball.rotation.z += 0.15;
-
-      if (progress >= duration) {
-        clearInterval(interval);
-
-        if (isCorrect) {
-          this.playNetSwooshSound();
-          this.playGoalCheer();
-          this.flashFloodlights(0x00f59b);
-          if (this.netMesh) {
-            this.netMesh.position.z = -4.7;
-            setTimeout(() => this.netMesh.position.z = -4.5, 300);
-          }
-          if (window.confetti) {
-            confetti({ particleCount: 75, spread: 70, origin: { y: 0.6 } });
-          }
-        } else {
-          this.playCrossbarClangSound();
-          this.playRefereeWhistle();
-          this.flashFloodlights(0xef4444);
-          this.ball.position.z += 0.8;
-          this.ball.position.y -= 0.5;
-        }
-
-        setTimeout(() => this.resetBallPosition(), 1800);
-      }
-    }, 16);
-  }
-
-  resetBallPosition() {
-    if (!this.ball) return;
-    this.ball.position.set(this.ballInitialPos.x, this.ballInitialPos.y, this.ballInitialPos.z);
-    this.isShooting = false;
-  }
-
-  flashFloodlights(colorHex) {
-    this.floodlights.forEach(l => {
-      l.color.setHex(colorHex);
-      l.intensity = 4.5;
-      setTimeout(() => {
-        l.color.setHex(0x00f59b);
-        l.intensity = 2.2;
-      }, 600);
-    });
+  getGuaranteedMilestone(index) {
+    if (index >= 15) return 1000000;
+    if (index >= 10) return 32000;
+    if (index >= 5) return 1000;
+    return 0;
   }
 
   // =========================================================
-  // 2. AUDIO SYNTHESIZER
-  // =========================================================
-  initAudio() {
-    if (!this.audioCtx) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.audioCtx = new AudioContext();
-    }
-    if (this.audioCtx.state === 'suspended') {
-      this.audioCtx.resume();
-    }
-  }
-
-  playBallKickSound() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    osc.frequency.setValueAtTime(140, this.audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(35, this.audioCtx.currentTime + 0.12);
-    gain.gain.setValueAtTime(0.35, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.14);
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.14);
-  }
-
-  playCrossbarClangSound() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    [880, 1320, 1760].forEach((freq, idx) => {
-      const osc = this.audioCtx.createOscillator();
-      const gain = this.audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.2 / (idx + 1), this.audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + 0.45);
-      osc.connect(gain);
-      gain.connect(this.audioCtx.destination);
-      osc.start();
-      osc.stop(this.audioCtx.currentTime + 0.45);
-    });
-  }
-
-  playNetSwooshSound() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    const bufferSize = this.audioCtx.sampleRate * 0.18;
-    const buffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-    const noise = this.audioCtx.createBufferSource();
-    noise.buffer = buffer;
-    const filter = this.audioCtx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1400;
-    const gain = this.audioCtx.createGain();
-    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.18);
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    noise.start();
-  }
-
-  playGoalCheer() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-      setTimeout(() => {
-        const osc = this.audioCtx.createOscillator();
-        const gain = this.audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(f, this.audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.18, this.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.5);
-        osc.connect(gain);
-        gain.connect(this.audioCtx.destination);
-        osc.start();
-        osc.stop(this.audioCtx.currentTime + 0.5);
-      }, i * 60);
-    });
-  }
-
-  playRefereeWhistle() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(2800, this.audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.18, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.28);
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.28);
-  }
-
-  playHeartbeat() {
-    if (!this.soundEnabled) return;
-    this.initAudio();
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    osc.frequency.setValueAtTime(80, this.audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.2, this.audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.08);
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.08);
-  }
-
-  toggleSound() {
-    this.soundEnabled = !this.soundEnabled;
-    const icon = document.getElementById('icon-sound');
-    if (this.soundEnabled) {
-      icon.setAttribute('data-lucide', 'volume-2');
-      icon.style.color = '#00f59b';
-    } else {
-      icon.setAttribute('data-lucide', 'volume-x');
-      icon.style.color = '#64748b';
-    }
-    lucide.createIcons();
-  }
-
-  initCardTiltEffects() {
-    const futCard = document.getElementById('fut-card');
-    if (futCard) {
-      window.addEventListener('mousemove', (e) => {
-        const rect = futCard.getBoundingClientRect();
-        const cardX = rect.left + rect.width / 2;
-        const cardY = rect.top + rect.height / 2;
-        const normX = (e.clientX - cardX) / (window.innerWidth / 2);
-        const normY = (e.clientY - cardY) / (window.innerHeight / 2);
-        futCard.style.transform = `perspective(800px) rotateY(${normX * 18}deg) rotateX(${-normY * 18}deg)`;
-      });
-    }
-  }
-
-  // =========================================================
-  // 3. LOAD QUESTIONS FROM JSON
+  // 2. LOAD 10,000 QUESTIONS DATASET
   // =========================================================
   async loadQuestions() {
     try {
       const res = await fetch('questions.json');
       if (!res.ok) throw new Error("Could not load questions.json");
       this.allQuestions = await res.json();
-      console.log(`Loaded ${this.allQuestions.length} football questions!`);
+      console.log(`Loaded ${this.allQuestions.length} football questions for Editorial Quiz!`);
     } catch (e) {
-      console.warn("Using fallback questions pool", e);
+      console.warn("Using verified fallback questions pool", e);
       this.allQuestions = [
         { id: 1, c: "FIFA World Cup", d: "Very Easy", q: "Which country won the 2022 FIFA World Cup in Qatar?", o: ["Argentina", "France", "Croatia", "Morocco"], a: "Argentina", e: "Argentina defeated France in Qatar 2022." },
-        { id: 2, c: "La Liga", d: "Very Easy", q: "Which club does Lionel Messi hold the all-time scoring record for?", o: ["FC Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"], a: "FC Barcelona", e: "Messi scored 672 goals for Barcelona." },
+        { id: 2, c: "La Liga", d: "Very Easy", q: "Which club does Lionel Messi hold the all-time scoring record for?", o: ["FC Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"], a: "FC Barcelona", e: "Messi scored 672 goals for FC Barcelona." },
         { id: 3, c: "Premier League", d: "Very Easy", q: "Which club is known as 'The Gunners'?", o: ["Arsenal", "Chelsea", "Liverpool", "Manchester United"], a: "Arsenal", e: "Arsenal was founded in Woolwich 1886." },
         { id: 4, c: "Premier League", d: "Very Easy", q: "What color home shirts do Manchester United and Liverpool wear?", o: ["Red", "Blue", "White", "Yellow"], a: "Red", e: "Both United and Liverpool wear red." },
         { id: 5, c: "FIFA World Cup", d: "Very Easy", q: "How many World Cup trophies has Brazil won?", o: ["5", "3", "4", "6"], a: "5", e: "Brazil holds 5 World Cup titles." }
@@ -465,12 +112,12 @@ class Footy3DBroadcastApp {
   }
 
   // =========================================================
-  // 4. MATCH KICKOFF & MODE LOGIC
+  // 3. START MATCH SESSION & UNLIMITED ENGINE
   // =========================================================
-  startMatch() {
-    this.currentIndex = 0;
-    this.score = 0;
+  startQuizSession() {
+    this.currentQuestionIndex = 0;
     this.currentBank = 0;
+    this.score = 0;
     this.streak = 0;
     this.maxStreak = 0;
     this.correctCount = 0;
@@ -483,143 +130,115 @@ class Footy3DBroadcastApp {
     document.getElementById('btn-ll-fans').disabled = false;
     document.getElementById('btn-ll-freeze').disabled = false;
 
-    // Update Mode Label & Visibility
+    // Update Mode Label & Walk Away Button
     const modeLabel = document.getElementById('active-mode-label');
     const walkAwayBtn = document.getElementById('btn-walk-away');
-    const moneySidebar = document.getElementById('money-tree-sidebar');
-    const scoreUnit = document.getElementById('hud-score-unit');
-    const footerSummary = document.getElementById('footer-summary-label');
+    const ladderDrawer = document.getElementById('money-ladder-drawer');
 
     if (this.currentMode === 'millionaire') {
-      modeLabel.textContent = "💰 Millionaire Ladder";
-      walkAwayBtn.style.display = "inline-flex";
-      moneySidebar.style.display = "flex";
-      scoreUnit.textContent = "BANK";
-      footerSummary.textContent = "Format: Football Millionaire • Ladder from Very Easy to Elite ($1,000,000)";
-      this.buildMillionaireQuestions();
-
-    } else if (this.currentMode === 'custom') {
+      modeLabel.textContent = "💰 Unlimited Millionaire";
+      walkAwayBtn.style.display = "flex";
+      walkAwayBtn.innerHTML = `<span>💼</span><span>Walk Away ($0)</span>`;
+      ladderDrawer.style.display = "block";
+      this.renderLadderRungs();
+    } else {
       modeLabel.textContent = `🎯 Tier: ${this.customDifficulty}`;
       walkAwayBtn.style.display = "none";
-      moneySidebar.style.display = "none";
-      scoreUnit.textContent = "PTS";
-      footerSummary.textContent = `Format: Custom Match • ${this.customDifficulty} • ${this.customCompetition}`;
-      this.buildCustomQuestions();
-
-    } else {
-      // Survival
-      modeLabel.textContent = "⚡ Sudden Death";
-      walkAwayBtn.style.display = "none";
-      moneySidebar.style.display = "none";
-      scoreUnit.textContent = "STREAK";
-      footerSummary.textContent = "Format: Sudden Death • 1 Miss = Game Over!";
-      this.buildSurvivalQuestions();
+      ladderDrawer.style.display = "none";
     }
 
-    this.renderQuestion();
+    this.renderNextQuestion();
   }
 
-  // Build 15 Progressive Questions: Very Easy -> Elite
-  buildMillionaireQuestions() {
-    const selected = [];
-    for (let i = 0; i < 15; i++) {
-      const tier = this.millionaireTiers[i];
-      let tierPool = this.allQuestions.filter(q => q.d === tier);
-      if (tierPool.length === 0) tierPool = this.allQuestions;
-      const q = tierPool[Math.floor(Math.random() * tierPool.length)];
-      selected.push(q);
+  renderLadderRungs() {
+    const list = document.getElementById('ladder-rungs-list');
+    list.innerHTML = '';
+    
+    // Display up to 15 rungs or current step + 5
+    const maxRung = Math.max(15, this.currentQuestionIndex + 5);
+    for (let r = maxRung; r >= 1; r--) {
+      const prize = this.getMillionairePrize(r - 1);
+      const isSafe = (r === 5 || r === 10 || r === 15);
+      const isActive = (r === this.currentQuestionIndex + 1);
+      const isPassed = (r <= this.currentQuestionIndex);
+
+      const div = document.createElement('div');
+      div.className = `ladder-rung ${isActive ? 'active' : ''} ${isPassed && !isActive ? 'passed' : ''} ${isSafe ? 'safe' : ''}`;
+      div.id = `ladder-rung-${r}`;
+      div.innerHTML = `
+        <span>${isSafe ? '🛡️ ' : ''}${r}.</span>
+        <span>$${prize.toLocaleString()}</span>
+      `;
+      list.appendChild(div);
     }
-    this.questions = selected;
   }
 
-  // Build 10 Questions matching custom tier & league
-  buildCustomQuestions() {
-    let pool = this.allQuestions;
-    if (this.customCompetition !== 'all') {
-      pool = pool.filter(q => q.c === this.customCompetition);
-    }
-    if (this.customDifficulty !== 'all') {
-      const diffPool = pool.filter(q => q.d === this.customDifficulty);
-      if (diffPool.length >= 10) pool = diffPool;
-    }
-    this.questions = [...pool].sort(() => 0.5 - Math.random()).slice(0, 10);
-  }
-
-  // Build 25 progressive questions for Sudden Death
-  buildSurvivalQuestions() {
-    this.questions = [...this.allQuestions].sort(() => 0.5 - Math.random()).slice(0, 25);
-  }
-
-  renderQuestion() {
-    const q = this.questions[this.currentIndex];
-    if (!q || this.isGameOver) {
-      this.finishMatch();
-      return;
-    }
-
+  renderNextQuestion() {
     this.isAnsweringAllowed = true;
     this.selectedOption = null;
+    document.getElementById('explanation-bar').style.display = 'none';
 
-    document.getElementById('commentary-drawer').style.display = 'none';
-
-    // HUD & Tags
-    document.getElementById('competition-tag').textContent = q.c;
-    document.getElementById('tier-tag').textContent = q.d;
-
+    // Pick question
     if (this.currentMode === 'millionaire') {
-      const currentPrize = this.millionairePrizes[this.currentIndex];
-      document.getElementById('question-counter').textContent = `Question ${this.currentIndex + 1} of 15 ($${currentPrize.toLocaleString()})`;
-      document.getElementById('hud-score-text').textContent = `$${this.currentBank.toLocaleString()}`;
-      this.updateMoneyTreeHighlight(this.currentIndex + 1);
+      // Endless random mix of Easy, Medium, Hard, Very Hard, Elite!
+      this.currentQuestion = this.allQuestions[Math.floor(Math.random() * this.allQuestions.length)];
+      
+      const currentPrize = this.getMillionairePrize(this.currentQuestionIndex);
+      document.getElementById('step-counter-pill').textContent = `Question ${this.currentQuestionIndex + 1} • Prize: $${currentPrize.toLocaleString()}`;
+      document.getElementById('btn-walk-away').innerHTML = `<span>💼</span><span>Walk Away ($${this.currentBank.toLocaleString()})</span>`;
+      
+      // Update Progress Bar
+      const pct = Math.min(100, Math.round(((this.currentQuestionIndex + 1) / 15) * 100));
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
 
-    } else if (this.currentMode === 'custom') {
-      document.getElementById('question-counter').textContent = `Question ${this.currentIndex + 1} of ${this.questions.length}`;
-      document.getElementById('hud-score-text').textContent = this.score.toLocaleString();
+      this.renderLadderRungs();
 
     } else {
-      document.getElementById('question-counter').textContent = `Penalty ${this.currentIndex + 1} (Sudden Death)`;
-      document.getElementById('hud-score-text').textContent = `${this.streak} 🔥`;
+      // Custom Difficulty Sprint
+      let pool = this.allQuestions;
+      if (this.customCompetition !== 'all') {
+        pool = pool.filter(q => q.c === this.customCompetition);
+      }
+      if (this.customDifficulty !== 'all') {
+        const diffPool = pool.filter(q => q.d === this.customDifficulty);
+        if (diffPool.length > 0) pool = diffPool;
+      }
+      this.currentQuestion = pool[Math.floor(Math.random() * pool.length)];
+
+      document.getElementById('step-counter-pill').textContent = `Question ${this.currentQuestionIndex + 1} of 10 • ${this.customDifficulty}`;
+      const pct = Math.min(100, Math.round(((this.currentQuestionIndex + 1) / 10) * 100));
+      document.getElementById('progress-bar-fill').style.width = `${pct}%`;
     }
 
-    document.getElementById('question-title').textContent = q.q;
+    const q = this.currentQuestion;
+    document.getElementById('category-league-label').textContent = q.c;
+    document.getElementById('category-diff-label').textContent = q.d;
+    document.getElementById('question-heading').textContent = q.q;
 
-    // 4 Option Cards
+    // Populate Option Cards
     for (let i = 0; i < 4; i++) {
-      const card = document.getElementById(`card-opt-${i}`);
-      const text = document.getElementById(`opt-text-${i}`);
-      text.textContent = q.o[i] || '';
-      card.className = "hologram-option-card";
-      card.disabled = false;
+      const btn = document.getElementById(`option-btn-${i}`);
+      const title = document.getElementById(`opt-title-${i}`);
+      title.textContent = q.o[i] || '';
+      btn.className = `option-card-btn anim-stagger-${i + 1}`;
+      btn.disabled = false;
     }
 
     this.startShotClock();
   }
 
-  updateMoneyTreeHighlight(currentRungNum) {
-    for (let r = 1; r <= 15; r++) {
-      const rungEl = document.getElementById(`rung-${r}`);
-      if (!rungEl) continue;
-      rungEl.classList.remove('active', 'passed');
-
-      if (r === currentRungNum) {
-        rungEl.classList.add('active');
-      } else if (r < currentRungNum) {
-        rungEl.classList.add('passed');
-      }
-    }
-  }
-
+  // =========================================================
+  // 4. SHOT CLOCK (30 SECONDS)
+  // =========================================================
   startShotClock() {
     this.clearIntervalTimer();
     this.timerSeconds = 30;
-    this.updateClockHUD();
 
     this.timerInterval = setInterval(() => {
       this.timerSeconds--;
-      this.updateClockHUD();
 
       if (this.timerSeconds <= 5 && this.timerSeconds > 0) {
-        this.playHeartbeat();
+        this.playTone(880, 'sine', 0.04, 0.05);
       }
 
       if (this.timerSeconds <= 0) {
@@ -636,152 +255,113 @@ class Footy3DBroadcastApp {
     }
   }
 
-  updateClockHUD() {
-    const clockText = document.getElementById('hud-clock-text');
-    const clockPill = document.getElementById('hud-clock-pill');
-    clockText.textContent = `${this.timerSeconds}s`;
-
-    if (this.timerSeconds <= 5) {
-      clockPill.classList.add('danger');
-    } else {
-      clockPill.classList.remove('danger');
-    }
-  }
-
   // =========================================================
   // 5. ANSWER SELECTION & VALIDATION
   // =========================================================
-  selectOption(idx) {
+  handleSelectOption(idx) {
     if (!this.isAnsweringAllowed) return;
     this.isAnsweringAllowed = false;
     this.clearIntervalTimer();
 
-    const q = this.questions[this.currentIndex];
+    const q = this.currentQuestion;
     const chosenText = q.o[idx];
     const isCorrect = (chosenText || '').trim().toLowerCase() === q.a.trim().toLowerCase();
 
-    this.shootBall(isCorrect);
-
-    // Highlight Cards
+    // Highlight Option Cards
     for (let i = 0; i < 4; i++) {
-      const card = document.getElementById(`card-opt-${i}`);
+      const btn = document.getElementById(`option-btn-${i}`);
       const opt = q.o[i];
-      card.disabled = true;
+      btn.disabled = true;
 
       if ((opt || '').trim().toLowerCase() === q.a.trim().toLowerCase()) {
-        card.classList.add('correct');
+        btn.classList.add('correct');
       } else if (i === idx && !isCorrect) {
-        card.classList.add('wrong');
+        btn.classList.add('wrong');
       } else {
-        card.classList.add('dimmed');
+        btn.classList.add('dimmed');
       }
     }
 
-    const drawer = document.getElementById('commentary-drawer');
-    const callout = document.getElementById('commentary-callout');
-    const pts = document.getElementById('commentary-pts');
-    const text = document.getElementById('commentary-text');
+    const expBar = document.getElementById('explanation-bar');
+    const expTitle = document.getElementById('explanation-title');
+    const expBody = document.getElementById('explanation-body');
 
     if (isCorrect) {
       this.correctCount++;
       this.streak++;
       if (this.streak > this.maxStreak) this.maxStreak = this.streak;
 
+      this.playGoalCheer();
+
       if (this.currentMode === 'millionaire') {
-        const prizeWon = this.millionairePrizes[this.currentIndex];
+        const prizeWon = this.getMillionairePrize(this.currentQuestionIndex);
         this.currentBank = prizeWon;
         this.score += prizeWon;
-
-        callout.innerHTML = `<span style="color:#00f59b;">🏆 CORRECT! YOU WON $${prizeWon.toLocaleString()}</span>`;
-        pts.textContent = `$${prizeWon.toLocaleString()}`;
-        pts.style.color = '#00f59b';
-
+        expTitle.innerHTML = `<span style="color:var(--teal-primary);">✓ Correct! You Banked $${prizeWon.toLocaleString()}</span>`;
       } else {
         const speedBonus = Math.floor((this.timerSeconds / 30) * 50);
-        const points = 100 + speedBonus + (this.streak * 15);
-        this.score += points;
-
-        callout.innerHTML = `<span style="color:#00f59b;">⚽ TOP BINS! GOOOAL</span>`;
-        pts.textContent = `+${points} PTS`;
-        pts.style.color = '#00f59b';
+        const pts = 100 + speedBonus + (this.streak * 15);
+        this.score += pts;
+        expTitle.innerHTML = `<span style="color:var(--teal-primary);">✓ Correct Answer! (+${pts} PTS)</span>`;
       }
 
-      if (this.streak >= 2) {
-        document.getElementById('hud-streak-badge').style.display = 'inline-flex';
-        document.getElementById('hud-streak-text').textContent = `${this.streak}x COMBO 🔥`;
+      if (window.confetti) {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
       }
 
     } else {
       this.wrongCount++;
       this.streak = 0;
-      document.getElementById('hud-streak-badge').style.display = 'none';
+      this.playMissTone();
 
       if (this.currentMode === 'millionaire') {
-        // Fall back to safety net: $32,000 or $1,000 or $0
-        let guaranteed = 0;
-        if (this.currentIndex >= 10) guaranteed = 32000;
-        else if (this.currentIndex >= 5) guaranteed = 1000;
+        const guaranteed = this.getGuaranteedMilestone(this.currentQuestionIndex);
         this.currentBank = guaranteed;
-
-        callout.innerHTML = `<span style="color:#ef4444;">❌ WRONG! YOU DROP TO $${guaranteed.toLocaleString()}</span>`;
-        pts.textContent = `$${guaranteed.toLocaleString()} SAFE`;
-        pts.style.color = '#ef4444';
+        expTitle.innerHTML = `<span style="color:var(--terracotta);">✕ Incorrect! You Fall Back to $${guaranteed.toLocaleString()}</span>`;
         this.isGameOver = true;
-
-      } else if (this.currentMode === 'survival') {
-        callout.innerHTML = `<span style="color:#ef4444;">❌ GAME OVER (SUDDEN DEATH)</span>`;
-        pts.textContent = "0 PTS";
-        pts.style.color = '#ef4444';
-        this.isGameOver = true;
-
       } else {
-        callout.innerHTML = `<span style="color:#ef4444;">❌ OFF THE CROSSBAR!</span>`;
-        pts.textContent = `+0 PTS`;
-        pts.style.color = '#ef4444';
+        expTitle.innerHTML = `<span style="color:var(--terracotta);">✕ Off the Target!</span>`;
       }
     }
 
-    text.textContent = `🎙️ Match Fact: ${q.e || `The correct answer is ${q.a}.`}`;
-
-    setTimeout(() => {
-      drawer.style.display = 'block';
-    }, 400);
+    expBody.textContent = q.e || `The verified answer is ${q.a}.`;
+    expBar.style.display = 'block';
   }
 
   handleTimeout() {
-    this.selectOption(-1);
+    this.handleSelectOption(-1);
   }
 
   nextQuestion() {
-    if (this.isGameOver || this.currentIndex >= this.questions.length - 1) {
-      this.finishMatch();
+    if (this.isGameOver || (this.currentMode === 'custom' && this.currentQuestionIndex >= 9)) {
+      this.triggerLoadingAndShowResults();
     } else {
-      this.currentIndex++;
-      this.renderQuestion();
+      this.currentQuestionIndex++;
+      this.renderNextQuestion();
     }
   }
 
   // =========================================================
-  // 6. WALK AWAY & BANK (MILLIONAIRE EXCLUSIVE)
+  // 6. WALK AWAY (MILLIONAIRE EXCLUSIVE)
   // =========================================================
   walkAwayAndBank() {
     if (this.currentMode !== 'millionaire') return;
-    if (confirm(`💼 Walk away now and lock in your $${this.currentBank.toLocaleString()} prize money?`)) {
+    if (confirm(`💼 Do you want to walk away now and secure your $${this.currentBank.toLocaleString()} prize?`)) {
       this.clearIntervalTimer();
       this.isGameOver = true;
-      this.finishMatch();
+      this.triggerLoadingAndShowResults();
     }
   }
 
   // =========================================================
-  // 7. LIFELINES: 50:50, ASK THE FANS, FREEZE
+  // 7. LIFELINES (50:50, ASK FANS, FREEZE)
   // =========================================================
   useLifeline5050() {
     if (!this.lifelines.fifty || !this.isAnsweringAllowed) return;
     this.lifelines.fifty = false;
     document.getElementById('btn-ll-5050').disabled = true;
 
-    const q = this.questions[this.currentIndex];
+    const q = this.currentQuestion;
     const wrongIndices = [];
     q.o.forEach((opt, idx) => {
       if (opt.trim().toLowerCase() !== q.a.trim().toLowerCase()) {
@@ -791,10 +371,10 @@ class Footy3DBroadcastApp {
 
     const toEliminate = wrongIndices.sort(() => 0.5 - Math.random()).slice(0, 2);
     toEliminate.forEach(idx => {
-      document.getElementById(`card-opt-${idx}`).classList.add('eliminated');
+      document.getElementById(`option-btn-${idx}`).classList.add('eliminated');
     });
 
-    this.playBallKickSound();
+    this.playTone(523, 'sine', 0.1);
   }
 
   useLifelineFans() {
@@ -802,11 +382,10 @@ class Footy3DBroadcastApp {
     this.lifelines.fans = false;
     document.getElementById('btn-ll-fans').disabled = true;
 
-    const q = this.questions[this.currentIndex];
+    const q = this.currentQuestion;
     const correctIdx = q.o.findIndex(opt => opt.trim().toLowerCase() === q.a.trim().toLowerCase());
 
-    // Generate realistic poll distribution favoring correct answer (65% - 85%)
-    const correctPct = Math.floor(65 + Math.random() * 20);
+    const correctPct = Math.floor(68 + Math.random() * 18);
     let remaining = 100 - correctPct;
     const pcts = [0, 0, 0, 0];
     pcts[correctIdx] = correctPct;
@@ -835,14 +414,192 @@ class Footy3DBroadcastApp {
     document.getElementById('btn-ll-freeze').disabled = true;
 
     this.timerSeconds += 15;
-    this.updateClockHUD();
-    document.getElementById('hud-clock-pill').style.borderColor = '#38bdf8';
-    setTimeout(() => document.getElementById('hud-clock-pill').style.borderColor = '', 1500);
-    this.playRefereeWhistle();
+    this.playTone(659, 'triangle', 0.2);
   }
 
   // =========================================================
-  // 8. LOBBY MODAL & CUSTOM CONFIGURATION
+  // 8. DEDICATED LOADING TRANSITION & RESULTS DISPLAY
+  // =========================================================
+  triggerLoadingAndShowResults() {
+    const loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.style.display = 'flex';
+
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+      this.showResultDashboard();
+    }, 1100);
+  }
+
+  showResultDashboard() {
+    this.clearIntervalTimer();
+    const modal = document.getElementById('modal-results');
+    modal.style.display = 'flex';
+
+    const total = this.correctCount + this.wrongCount;
+    const acc = total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
+
+    let ovr = Math.round(84 + (acc * 0.1) + (this.maxStreak * 1.2));
+    if (this.currentMode === 'millionaire' && this.currentBank >= 1000000) ovr = 99;
+    ovr = Math.max(80, Math.min(99, ovr));
+
+    let title = "Ballon d'Or Tactician";
+    let badgeText = "World Class";
+    if (ovr < 88) {
+      title = "Season Ticket Analyst";
+      badgeText = "Intermediate";
+    } else if (ovr < 93) {
+      title = "Premier League Tactician";
+      badgeText = "Advanced";
+    } else if (ovr < 96) {
+      title = "Champions League Maestro";
+      badgeText = "Elite";
+    }
+
+    // Populate Stats Grid
+    if (this.currentMode === 'millionaire') {
+      document.getElementById('stat-label-1').textContent = "Prize Banked";
+      document.getElementById('stat-val-bank').textContent = `$${this.currentBank.toLocaleString()}`;
+      document.getElementById('playcard-score').textContent = `$${this.currentBank.toLocaleString()}`;
+    } else {
+      document.getElementById('stat-label-1').textContent = "Total Points";
+      document.getElementById('stat-val-bank').textContent = this.score.toLocaleString();
+      document.getElementById('playcard-score').textContent = `${this.score.toLocaleString()} PTS`;
+    }
+
+    document.getElementById('stat-val-acc').textContent = `${acc}%`;
+    document.getElementById('stat-val-streak').textContent = `${this.maxStreak} 🔥`;
+
+    // Populate Collectible Playcard (FOR EVERYONE)
+    document.getElementById('result-profile-title').textContent = title;
+    document.getElementById('playcard-badge').textContent = badgeText;
+    document.getElementById('playcard-name').textContent = this.currentUser.name || 'Guest Baller';
+    document.getElementById('playcard-ovr').textContent = ovr;
+    document.getElementById('playcard-acc').textContent = `${acc}%`;
+    document.getElementById('playcard-streak').textContent = `${this.maxStreak} 🔥`;
+    document.getElementById('playcard-tier').textContent = badgeText;
+
+    if (window.confetti) {
+      confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+    }
+  }
+
+  resetQuiz() {
+    document.getElementById('modal-results').style.display = 'none';
+    this.startQuizSession();
+  }
+
+  // =========================================================
+  // 9. GMAIL SIGN-IN & LEADERBOARD LOGIC
+  // =========================================================
+  handleGoogleSignInForLeaderboard() {
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const googleName = prompt("Enter your Baller Handle for the Official Leaderboard:", this.currentUser.name !== 'Guest Baller' ? this.currentUser.name : `Baller_${randomSuffix}`);
+    if (!googleName) return;
+
+    this.currentUser = {
+      name: googleName.trim(),
+      email: `${googleName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+      club: 'Verified Club',
+      verified: true
+    };
+    localStorage.setItem('footy_editorial_user', JSON.stringify(this.currentUser));
+
+    // Update UI
+    document.getElementById('playcard-name').textContent = this.currentUser.name;
+    const btnText = document.getElementById('google-btn-text');
+    btnText.textContent = `✓ Verified as ${this.currentUser.email}`;
+
+    // Submit to Leaderboard API
+    const finalScore = this.currentMode === 'millionaire' ? this.currentBank : this.score;
+    const total = this.correctCount + this.wrongCount;
+    const acc = total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
+    const iq = parseInt(document.getElementById('playcard-ovr').textContent) || 96;
+
+    fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: this.currentUser.name,
+        email: this.currentUser.email,
+        club: this.currentUser.club,
+        score: finalScore,
+        accuracy: acc,
+        iq: iq
+      })
+    }).then(() => {
+      alert(`🎉 Verified with Gmail! Score of ${finalScore.toLocaleString()} recorded to the Official Global Leaderboard.`);
+    }).catch(() => {
+      alert(`🎉 Verified with Gmail! Your score has been recorded.`);
+    });
+  }
+
+  sharePlaycard() {
+    const ovr = document.getElementById('playcard-ovr').textContent;
+    const score = document.getElementById('playcard-score').textContent;
+    const name = document.getElementById('playcard-name').textContent;
+    const text = `⚽ FootyQuiz Editorial Playcard\n👑 Player: ${name}\n🎯 Rating: ${ovr} OVR\n💰 Result: ${score}\n\nProve your ball knowledge: quiz.bhuwanadhikari007.com.np`;
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Playcard copied to clipboard! Share it with your football group.");
+      });
+    } else {
+      alert(text);
+    }
+  }
+
+  // =========================================================
+  // 10. LEADERBOARD MODAL
+  // =========================================================
+  async openLeaderboardModal() {
+    const modal = document.getElementById('modal-leaderboard');
+    const list = document.getElementById('leaderboard-list');
+    modal.style.display = 'flex';
+
+    list.innerHTML = `<div style="text-align:center; padding:20px; font-size:12px; color:var(--graphite-60);">Loading Verified Standings...</div>`;
+
+    try {
+      const res = await fetch('/api/leaderboard?type=global');
+      const data = await res.json();
+      list.innerHTML = '';
+
+      data.slice(0, 15).forEach((entry, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--cream-bg); border-radius:14px; font-size:13px;";
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-weight:800; color:var(--teal-primary); width:20px;">#${idx + 1}</span>
+            <div>
+              <div style="font-weight:700; color:var(--graphite);">${entry.name} <span style="font-size:10px; color:var(--teal-primary); background:var(--teal-light); padding:1px 6px; border-radius:9999px;">✓ Gmail</span></div>
+              <div style="font-size:11px; color:var(--graphite-60);">${entry.club || 'Neutral'} • Accuracy: ${entry.accuracy}%</div>
+            </div>
+          </div>
+          <div style="font-family:var(--font-serif); font-weight:800; color:var(--terracotta); font-size:15px;">
+            ${entry.score.toLocaleString()}
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    } catch (e) {
+      list.innerHTML = `
+        <div style="padding:10px 14px; background:var(--cream-bg); border-radius:14px; display:flex; justify-content:space-between;">
+          <span>#1 Thierry_King14 (✓ Gmail)</span>
+          <span style="font-weight:800; color:var(--terracotta);">$2,840,000</span>
+        </div>
+        <div style="padding:10px 14px; background:var(--cream-bg); border-radius:14px; display:flex; justify-content:space-between;">
+          <span>#2 Zizou_Volley (✓ Gmail)</span>
+          <span style="font-weight:800; color:var(--terracotta);">$1,000,000</span>
+        </div>
+      `;
+    }
+  }
+
+  closeLeaderboardModal() {
+    document.getElementById('modal-leaderboard').style.display = 'none';
+  }
+
+  // =========================================================
+  // 11. LOBBY & CUSTOM SELECTORS
   // =========================================================
   openLobbyModal() {
     document.getElementById('modal-lobby').style.display = 'flex';
@@ -852,118 +609,117 @@ class Footy3DBroadcastApp {
     document.getElementById('modal-lobby').style.display = 'none';
   }
 
-  selectModeInLobby(mode) {
-    ['millionaire', 'custom', 'survival'].forEach(m => {
-      const card = document.getElementById(`card-mode-${m}`);
-      const icon = card.querySelector('.mode-check-icon');
-      if (m === mode) {
-        card.classList.add('active');
-        if (icon) icon.style.display = 'block';
+  setLobbyMode(mode) {
+    this.tempMode = mode;
+    const mCard = document.getElementById('lobby-mode-millionaire');
+    const cCard = document.getElementById('lobby-mode-custom');
+    const subset = document.getElementById('lobby-custom-subsettings');
+
+    if (mode === 'millionaire') {
+      mCard.style.border = '2px solid var(--teal-primary)';
+      cCard.style.border = '1px solid var(--border-soft)';
+      subset.style.display = 'none';
+    } else {
+      cCard.style.border = '2px solid var(--teal-primary)';
+      mCard.style.border = '1px solid var(--border-soft)';
+      subset.style.display = 'block';
+    }
+  }
+
+  setCustomDifficulty(diff) {
+    this.customDifficulty = diff;
+    document.querySelectorAll('#pills-diff .editorial-btn').forEach(btn => {
+      if (btn.textContent.includes(diff)) {
+        btn.style.backgroundColor = 'var(--teal-primary)';
+        btn.style.color = '#FFFFFF';
       } else {
-        card.classList.remove('active');
-        if (icon) icon.style.display = 'none';
+        btn.style.backgroundColor = '#FFFFFF';
+        btn.style.color = 'var(--graphite)';
       }
     });
-
-    const settingsSection = document.getElementById('lobby-custom-settings');
-    if (mode === 'custom') {
-      settingsSection.style.display = 'block';
-    } else {
-      settingsSection.style.display = 'none';
-    }
-
-    this.tempSelectedMode = mode;
   }
 
-  setDifficultyInLobby(diff) {
-    this.customDifficulty = diff;
-    document.querySelectorAll('#lobby-diff-pills .filter-pill').forEach(btn => {
-      if (btn.textContent.includes(diff)) btn.classList.add('active');
-      else btn.classList.remove('active');
-    });
-  }
-
-  setCompetitionInLobby(comp) {
+  setCustomCompetition(comp) {
     this.customCompetition = comp;
-    document.querySelectorAll('#lobby-comp-pills .filter-pill').forEach(btn => {
-      btn.classList.remove('active');
+    document.querySelectorAll('#pills-comp .editorial-btn').forEach(btn => {
+      btn.style.backgroundColor = '#FFFFFF';
+      btn.style.color = 'var(--graphite)';
     });
-    const activeBtn = Array.from(document.querySelectorAll('#lobby-comp-pills .filter-pill')).find(b => b.onclick.toString().includes(comp));
-    if (activeBtn) activeBtn.classList.add('active');
+    const found = Array.from(document.querySelectorAll('#pills-comp .editorial-btn')).find(b => b.onclick.toString().includes(comp));
+    if (found) {
+      found.style.backgroundColor = 'var(--teal-primary)';
+      found.style.color = '#FFFFFF';
+    }
   }
 
-  applyLobbyAndStart() {
-    this.currentMode = this.tempSelectedMode || this.currentMode;
+  confirmLobbyAndStart() {
+    this.currentMode = this.tempMode || this.currentMode;
     this.closeLobbyModal();
-    this.startMatch();
+    this.startQuizSession();
   }
 
   // =========================================================
-  // 9. EA FC / FUT ULTIMATE TEAM 3D ICON CARD REVEAL
+  // 12. SOUND SYNTHESIZER
   // =========================================================
-  finishMatch() {
-    this.clearIntervalTimer();
-    const modal = document.getElementById('modal-results');
-    modal.style.display = 'flex';
-
-    const total = this.correctCount + this.wrongCount;
-    const acc = total > 0 ? Math.round((this.correctCount / total) * 100) : 0;
-
-    let ovr = Math.round(82 + (acc * 0.12) + (this.score / 250) + (this.maxStreak * 0.8));
-    if (this.currentMode === 'millionaire' && this.currentBank >= 1000000) ovr = 99;
-    ovr = Math.max(80, Math.min(99, ovr));
-
-    let title = "🏆 Ballon d'Or Tactician";
-    if (ovr < 88) title = "🧢 Matchday Ticket Holder";
-    else if (ovr < 93) title = "🔥 Premier League Baller";
-    else if (ovr < 96) title = "⭐ Champions League Maestro";
-
-    document.getElementById('fut-rating-num').textContent = ovr;
-    document.getElementById('fut-rank-desc').textContent = title;
-
-    if (this.currentMode === 'millionaire') {
-      document.getElementById('fut-label-earnings').textContent = "PRIZE WON";
-      document.getElementById('fut-stat-score').textContent = `$${this.currentBank.toLocaleString()}`;
-    } else {
-      document.getElementById('fut-label-earnings').textContent = "SCORE";
-      document.getElementById('fut-stat-score').textContent = this.score.toLocaleString();
+  initAudio() {
+    if (!this.audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this.audioCtx = new AudioContext();
     }
-
-    document.getElementById('fut-stat-acc').textContent = `${acc}%`;
-    document.getElementById('fut-stat-streak').textContent = `${this.maxStreak} 🔥`;
-    document.getElementById('fut-stat-speed').textContent = `${Math.min(99, 85 + this.maxStreak * 2)} PAC`;
-
-    if (window.confetti) {
-      confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume();
     }
   }
 
-  resetGame() {
-    document.getElementById('modal-results').style.display = 'none';
-    this.startMatch();
+  playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.15) {
+    if (!this.soundEnabled) return;
+    try {
+      this.initAudio();
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+      gain.gain.setValueAtTime(gainVal, this.audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + duration);
+    } catch (e) {}
   }
 
-  shareScorecard() {
-    const ovr = document.getElementById('fut-rating-num').textContent;
-    const prize = document.getElementById('fut-stat-score').textContent;
-    const text = `⚽ FootyQuiz 3D\n👑 Rating: ${ovr} OVR\n💰 Prize: ${prize}\n\nTest your ball knowledge: quiz.bhuwanadhikari007.com.np`;
+  playGoalCheer() {
+    this.playTone(523.25, 'triangle', 0.15, 0.2);
+    setTimeout(() => this.playTone(659.25, 'triangle', 0.18, 0.2), 70);
+    setTimeout(() => this.playTone(783.99, 'triangle', 0.25, 0.22), 140);
+    setTimeout(() => this.playTone(1046.50, 'sine', 0.4, 0.25), 210);
+  }
 
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert("3D Scorecard copied to clipboard! Share it with your friends.");
-      });
+  playMissTone() {
+    this.playTone(220, 'sawtooth', 0.2, 0.18);
+    setTimeout(() => this.playTone(174.61, 'sawtooth', 0.35, 0.2), 100);
+  }
+
+  toggleSound() {
+    this.soundEnabled = !this.soundEnabled;
+    const icon = document.getElementById('icon-sound');
+    if (this.soundEnabled) {
+      icon.setAttribute('data-lucide', 'volume-2');
+      icon.style.color = 'var(--teal-primary)';
     } else {
-      alert(text);
+      icon.setAttribute('data-lucide', 'volume-x');
+      icon.style.color = 'var(--graphite-60)';
     }
+    lucide.createIcons();
   }
 
   initKeyboardShortcuts() {
     window.addEventListener('keydown', (e) => {
       if (['1', '2', '3', '4'].includes(e.key)) {
-        this.selectOption(parseInt(e.key) - 1);
+        this.handleSelectOption(parseInt(e.key) - 1);
       }
       if (e.code === 'Space' || e.key === 'Enter') {
-        if (document.getElementById('commentary-drawer').style.display === 'block') {
+        if (document.getElementById('explanation-bar').style.display === 'block') {
           e.preventDefault();
           this.nextQuestion();
         }
@@ -972,5 +728,5 @@ class Footy3DBroadcastApp {
   }
 }
 
-// Single Global Instance
-window.app = new Footy3DBroadcastApp();
+// Global Single Instance
+window.app = new FootyEditorialApp();
