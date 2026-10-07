@@ -1,14 +1,15 @@
 /**
  * FootyQuiz Pro - Editorial Nurture Ball Knowledge Controller
  * Features:
- * 1. Landing/Index Page with Game Mode Selection First
+ * 1. Landing/Index Page with Game Mode Selection First (Zero Floating Tables)
  * 2. "Check Your Ball Knowledge" Mode (Endless Random Mix of Easy, Medium, Hard, Very Hard, Elite)
- * 3. Dynamic Infinite Prize Ladder with Safety Nets ($1K, $32K, $1M, $10M, $100M...)
+ * 3. On-Demand Dynamic Prize Ladder Modal with Safety Checkpoints ($1K, $32K, $1M, $10M, $100M...)
  * 4. Custom Match Mode (10-Question Sprint by Difficulty & Competition)
- * 5. Dedicated Loading Transition & Diagnostic Results Dashboard
- * 6. Collectible Playcard Generation for EVERYONE (Guest or Signed In)
- * 7. Gmail Sign-In requirement for Official Global Leaderboard Recording
- * 8. Web Audio Synthesizer & Stadium Fan Poll Lifeline
+ * 5. Animated 30-Second Shot Clock with Audio Cues
+ * 6. Dedicated Loading Transition & Diagnostic Results Dashboard
+ * 7. Collectible Playcard Generation for EVERYONE (Guest or Signed In)
+ * 8. Gmail Sign-In requirement for Official Global Leaderboard Recording
+ * 9. Web Audio Synthesizer & Stadium Fan Poll Lifeline
  */
 
 class FootyEditorialApp {
@@ -65,7 +66,7 @@ class FootyEditorialApp {
     this.initKeyboardShortcuts();
     lucide.createIcons();
 
-    // Default to Landing Page view
+    // Default to Landing Page view (pristine, zero quiz widgets)
     this.showLandingView();
 
     // Pre-select Ball Knowledge mode on landing
@@ -82,16 +83,15 @@ class FootyEditorialApp {
     this.clearIntervalTimer();
     const landingView = document.getElementById('view-landing');
     const quizView = document.getElementById('view-quiz');
-    const ladderDrawer = document.getElementById('money-ladder-drawer');
+    const ladderModal = document.getElementById('modal-ladder');
     const resultsModal = document.getElementById('modal-results');
+    const pollModal = document.getElementById('modal-fan-poll');
 
     if (landingView) landingView.style.display = 'flex';
     if (quizView) quizView.style.display = 'none';
-    if (ladderDrawer) {
-      ladderDrawer.style.display = 'none';
-      ladderDrawer.classList.remove('active-drawer');
-    }
+    if (ladderModal) ladderModal.style.display = 'none';
     if (resultsModal) resultsModal.style.display = 'none';
+    if (pollModal) pollModal.style.display = 'none';
 
     lucide.createIcons();
   }
@@ -118,13 +118,15 @@ class FootyEditorialApp {
       if (bkCard) bkCard.classList.add('selected');
       if (customCard) customCard.classList.remove('selected');
       if (customSettings) customSettings.style.display = 'none';
-      if (startText) startText.textContent = 'Start Ball Knowledge Challenge (Endless)';
+      if (startText) startText.textContent = 'Kick Off Ball Knowledge (Endless)';
+      this.playTone(620, 'sine', 0.08, 0.12);
     } else {
       if (customCard) customCard.classList.add('selected');
       if (bkCard) bkCard.classList.remove('selected');
       if (customSettings) customSettings.style.display = 'block';
-      if (startText) startText.textContent = `Start Custom Match (${this.customDifficulty} • 10 Qs)`;
+      if (startText) startText.textContent = `Kick Off Custom Match (${this.customDifficulty} • 10 Qs)`;
       this.updateLandingPills();
+      this.playTone(520, 'sine', 0.08, 0.12);
     }
 
     if (startBtn) startBtn.style.display = 'flex';
@@ -134,14 +136,16 @@ class FootyEditorialApp {
     this.customDifficulty = diff;
     const startText = document.getElementById('landing-start-text');
     if (startText) {
-      startText.textContent = `Start Custom Match (${this.customDifficulty} • 10 Qs)`;
+      startText.textContent = `Kick Off Custom Match (${this.customDifficulty} • 10 Qs)`;
     }
     this.updateLandingPills();
+    this.playTone(580, 'sine', 0.05, 0.1);
   }
 
   setLandingCompetition(comp) {
     this.customCompetition = comp;
     this.updateLandingPills();
+    this.playTone(540, 'sine', 0.05, 0.1);
   }
 
   updateLandingPills() {
@@ -174,7 +178,7 @@ class FootyEditorialApp {
 
   goBackToLanding() {
     if (!this.isGameOver && (this.currentQuestionIndex > 0 || this.currentBank > 0)) {
-      if (!confirm("Are you sure you want to return to the Main Menu? Your active match progress will be lost.")) {
+      if (!confirm("Are you sure you want to return to the Main Menu? Your match in progress will be abandoned.")) {
         return;
       }
     }
@@ -235,7 +239,6 @@ class FootyEditorialApp {
   }
 
   getGuaranteedMilestone(questionIndex) {
-    // Completed questions count = questionIndex
     if (questionIndex < 5) return 0;
     const highestPassedMilestoneRung = Math.floor(questionIndex / 5) * 5;
     return this.getPrizeForRung(highestPassedMilestoneRung - 1);
@@ -288,32 +291,40 @@ class FootyEditorialApp {
     if (btnFans) btnFans.disabled = false;
     if (btnFreeze) btnFreeze.disabled = false;
 
-    // Update Mode Label & Walk Away Button
+    // Update Mode Label & Controls
     const modeLabel = document.getElementById('active-mode-label');
     const walkAwayBtn = document.getElementById('btn-walk-away');
-    const ladderDrawer = document.getElementById('money-ladder-drawer');
+    const headerLadderBtn = document.getElementById('btn-header-ladder');
+    const llLadderBtn = document.getElementById('btn-ll-ladder');
 
     if (this.currentMode === 'ballknowledge') {
-      if (modeLabel) modeLabel.textContent = "🧠 Check Your Ball Knowledge";
+      if (modeLabel) modeLabel.textContent = "🧠 Ball Knowledge";
       if (walkAwayBtn) {
         walkAwayBtn.style.display = "flex";
         walkAwayBtn.innerHTML = `<span>💼</span><span>Walk Away ($0)</span>`;
       }
-      if (ladderDrawer) {
-        ladderDrawer.style.display = "block";
-        ladderDrawer.classList.add('active-drawer');
-      }
-      this.renderLadderRungs();
+      if (headerLadderBtn) headerLadderBtn.style.display = "inline-flex";
+      if (llLadderBtn) llLadderBtn.style.display = "flex";
     } else {
-      if (modeLabel) modeLabel.textContent = `🎯 Custom: ${this.customDifficulty}`;
+      if (modeLabel) modeLabel.textContent = `🎯 ${this.customDifficulty}`;
       if (walkAwayBtn) walkAwayBtn.style.display = "none";
-      if (ladderDrawer) {
-        ladderDrawer.style.display = "none";
-        ladderDrawer.classList.remove('active-drawer');
-      }
+      if (headerLadderBtn) headerLadderBtn.style.display = "none";
+      if (llLadderBtn) llLadderBtn.style.display = "none";
     }
 
     this.renderNextQuestion();
+  }
+
+  // On-Demand Modal Ladder (Clean overlay, never floating)
+  openLadderModal() {
+    this.renderLadderRungs();
+    const modal = document.getElementById('modal-ladder');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  closeLadderModal() {
+    const modal = document.getElementById('modal-ladder');
+    if (modal) modal.style.display = 'none';
   }
 
   renderLadderRungs() {
@@ -321,8 +332,6 @@ class FootyEditorialApp {
     if (!list) return;
     list.innerHTML = '';
 
-    // Truly dynamic ladder: always displays upcoming rungs beyond the current question
-    // E.g. displays at least 15 rungs or current step + 6 rungs
     const maxRung = Math.max(15, this.currentQuestionIndex + 6);
 
     for (let r = maxRung; r >= 1; r--) {
@@ -335,19 +344,23 @@ class FootyEditorialApp {
       div.className = `ladder-rung ${isActive ? 'active' : ''} ${isPassed && !isActive ? 'passed' : ''} ${isSafe ? 'safe' : ''}`;
       div.id = `ladder-rung-${r}`;
       div.innerHTML = `
-        <span>${isSafe ? '🛡️ ' : ''}${r}.</span>
-        <span>$${prize.toLocaleString()}</span>
+        <span style="display:flex; align-items:center; gap:6px;">
+          ${isSafe ? '<span>🛡️</span>' : ''}
+          <span>${r}.</span>
+          ${isSafe ? '<span style="font-size:10px; font-weight:800; opacity:0.85;">MILESTONE</span>' : ''}
+        </span>
+        <span style="font-family:var(--font-serif); font-size:13.5px; font-weight:800;">$${prize.toLocaleString()}</span>
       `;
       list.appendChild(div);
     }
 
-    // Auto-scroll drawer to active rung so player always sees their exact position
+    // Auto-scroll inside the modal to the current active rung
     setTimeout(() => {
       const activeEl = document.getElementById(`ladder-rung-${this.currentQuestionIndex + 1}`);
       if (activeEl) {
         activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 100);
+    }, 80);
   }
 
   renderNextQuestion() {
@@ -358,8 +371,7 @@ class FootyEditorialApp {
 
     // 1. Pick Question
     if (this.currentMode === 'ballknowledge') {
-      // TRULY UNLIMITED RANDOM QUESTION FROM 10,000 POOL!
-      // Filter out already used questions in this session
+      // TRULY UNLIMITED RANDOM QUESTIONS FROM 10,000 POOL!
       let available = this.allQuestions.filter(q => !this.usedQuestionIds.has(q.id));
       if (available.length === 0) {
         this.usedQuestionIds.clear();
@@ -372,7 +384,7 @@ class FootyEditorialApp {
       const currentPrize = this.getPrizeForRung(this.currentQuestionIndex);
       const stepPill = document.getElementById('step-counter-pill');
       if (stepPill) {
-        stepPill.textContent = `Question ${this.currentQuestionIndex + 1} • Prize: $${currentPrize.toLocaleString()}`;
+        stepPill.textContent = `Q${this.currentQuestionIndex + 1} • Prize: $${currentPrize.toLocaleString()}`;
       }
 
       const walkAwayBtn = document.getElementById('btn-walk-away');
@@ -385,8 +397,6 @@ class FootyEditorialApp {
       const pct = Math.min(100, Math.round(((currentSegment + 1) / 5) * 100));
       const progressBar = document.getElementById('progress-bar-fill');
       if (progressBar) progressBar.style.width = `${pct}%`;
-
-      this.renderLadderRungs();
 
     } else {
       // Custom Difficulty Sprint (10 Questions)
@@ -411,7 +421,7 @@ class FootyEditorialApp {
 
       const stepPill = document.getElementById('step-counter-pill');
       if (stepPill) {
-        stepPill.textContent = `Question ${this.currentQuestionIndex + 1} of 10 • ${this.customDifficulty}`;
+        stepPill.textContent = `Q${this.currentQuestionIndex + 1} of 10 • ${this.customDifficulty}`;
       }
 
       const pct = Math.min(100, Math.round(((this.currentQuestionIndex + 1) / 10) * 100));
@@ -443,17 +453,24 @@ class FootyEditorialApp {
   }
 
   // =========================================================
-  // 5. SHOT CLOCK (30 SECONDS)
+  // 5. SHOT CLOCK (30 SECONDS LIVE WITH AUDIBLE TICKS)
   // =========================================================
   startShotClock() {
     this.clearIntervalTimer();
     this.timerSeconds = 30;
 
+    const clockSec = document.getElementById('shot-clock-sec');
+    const clockPill = document.getElementById('shot-clock-pill');
+    if (clockSec) clockSec.textContent = `${this.timerSeconds}s`;
+    if (clockPill) clockPill.classList.remove('urgent');
+
     this.timerInterval = setInterval(() => {
       this.timerSeconds--;
+      if (clockSec) clockSec.textContent = `${this.timerSeconds}s`;
 
       if (this.timerSeconds <= 5 && this.timerSeconds > 0) {
-        this.playTone(880, 'sine', 0.04, 0.05);
+        if (clockPill) clockPill.classList.add('urgent');
+        this.playTone(880, 'sine', 0.04, 0.06);
       }
 
       if (this.timerSeconds <= 0) {
@@ -468,6 +485,8 @@ class FootyEditorialApp {
       clearInterval(this.timerInterval);
       this.timerInterval = null;
     }
+    const clockPill = document.getElementById('shot-clock-pill');
+    if (clockPill) clockPill.classList.remove('urgent');
   }
 
   // =========================================================
@@ -648,6 +667,8 @@ class FootyEditorialApp {
     if (btn) btn.disabled = true;
 
     this.timerSeconds += 15;
+    const clockSec = document.getElementById('shot-clock-sec');
+    if (clockSec) clockSec.textContent = `${this.timerSeconds}s`;
     this.playTone(659, 'triangle', 0.2);
   }
 

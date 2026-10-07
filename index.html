@@ -25,7 +25,7 @@
   </div>
 
   <!-- ============================================================ -->
-  <!-- VIEW 1: LANDING PAGE (shown first) -->
+  <!-- VIEW 1: LANDING PAGE (First screen, zero floating tables) -->
   <!-- ============================================================ -->
   <div class="landing-page" id="view-landing">
     <div class="landing-inner">
@@ -59,15 +59,15 @@
           <div class="mode-card-content">
             <div class="mode-card-title-row">
               <span class="mode-card-title">Check Your Ball Knowledge</span>
-              <span class="mode-badge mode-badge-endless">ENDLESS</span>
+              <span class="mode-badge mode-badge-endless">POPULAR • ENDLESS</span>
             </div>
             <p class="mode-card-desc">
-              Unlimited random questions from Easy to Elite. Climb the prize ladder from $100 to $10,000,000+. Safety nets protect your earnings. Walk away anytime or risk it all.
+              Unlimited random questions from Easy to Elite. Scale your cash bank from $100 up to $10,000,000+. Safety checkpoints every 5 questions lock in your earnings. Walk away anytime or risk it all.
             </p>
             <div class="mode-card-tags">
-              <span class="mode-tag">⚡ Random Mix</span>
-              <span class="mode-tag">💰 Prize Ladder</span>
-              <span class="mode-tag">🛡️ Safety Nets</span>
+              <span class="mode-tag">⚡ Endless Random Pool</span>
+              <span class="mode-tag">💰 Cash Prize Ladder</span>
+              <span class="mode-tag">🛡️ Safety Nets Every 5 Qs</span>
             </div>
           </div>
           <div class="mode-card-arrow">
@@ -82,16 +82,16 @@
           </div>
           <div class="mode-card-content">
             <div class="mode-card-title-row">
-              <span class="mode-card-title">Custom Match</span>
+              <span class="mode-card-title">Custom Tactical Match</span>
               <span class="mode-badge mode-badge-sprint">10 QUESTIONS</span>
             </div>
             <p class="mode-card-desc">
-              Pick your preferred difficulty tier and league competition. A focused 10-question sprint to prove your specialized knowledge.
+              Pick your preferred difficulty tier and league competition. A focused 10-question sprint to prove your specialized football knowledge.
             </p>
             <div class="mode-card-tags">
-              <span class="mode-tag">🎚️ Choose Difficulty</span>
-              <span class="mode-tag">🏟️ Choose League</span>
-              <span class="mode-tag">🏁 Quick Match</span>
+              <span class="mode-tag">🎚️ Choose Tier</span>
+              <span class="mode-tag">🏟️ League Filter</span>
+              <span class="mode-tag">🏁 Rapid Match</span>
             </div>
           </div>
           <div class="mode-card-arrow">
@@ -134,8 +134,8 @@
       </div>
 
       <!-- Start Button -->
-      <button type="button" class="landing-start-btn" id="landing-start-btn" onclick="app.startFromLanding()" style="display:none;">
-        <span id="landing-start-text">Start Challenge</span>
+      <button type="button" class="landing-start-btn" id="landing-start-btn" onclick="app.startFromLanding()">
+        <span id="landing-start-text">Kick Off Match</span>
         <i data-lucide="zap" style="width:18px; height:18px;"></i>
       </button>
 
@@ -143,12 +143,12 @@
       <div class="landing-footer">
         <button type="button" class="landing-footer-link" onclick="app.openLeaderboardModal()">
           <i data-lucide="award" style="width:14px; height:14px;"></i>
-          <span>Leaderboard</span>
+          <span>Global Standings</span>
         </button>
         <span style="color:var(--graphite-40);">•</span>
         <a href="https://bhuwanadhikari007.com.np/footyhub/" target="_blank" class="landing-footer-link">
           <i data-lucide="radio" style="width:14px; height:14px;"></i>
-          <span>FootyHub</span>
+          <span>FootyHub Companion</span>
         </a>
       </div>
 
@@ -156,37 +156,49 @@
   </div>
 
   <!-- ============================================================ -->
-  <!-- VIEW 2: QUIZ GAME (hidden until mode selected) -->
+  <!-- VIEW 2: QUIZ GAME (Hidden until mode is started) -->
   <!-- ============================================================ -->
   <div class="editorial-shell" id="view-quiz" style="display:none;">
 
-    <!-- 1. QUIZ HEADER -->
+    <!-- 1. QUIZ HEADER (Clean, modern HUD) -->
     <header class="quiz-header">
       
       <div class="header-top-row">
-        <!-- Branding on Left -->
-        <div class="header-branding" onclick="app.goBackToLanding()">
+        <!-- Branding on Left (Click to return home) -->
+        <div class="header-branding" onclick="app.goBackToLanding()" title="Return to Main Menu">
           <div class="brand-icon-box">
             <i data-lucide="trophy" style="width:20px; height:20px;"></i>
           </div>
           <div>
-            <div class="brand-editorial-text">FOOTYQUIZ • EDITORIAL</div>
+            <div class="brand-editorial-text">FOOTYQUIZ • PRO</div>
             <div class="brand-editorial-sub">10,000 Verified Football Questions</div>
           </div>
         </div>
 
-        <!-- Right Controls: Mode Chip, Counter, Sound, Leaderboard -->
+        <!-- Right Controls: Mode Pill, Shot Clock, Ladder Button, Sound, Leaderboard -->
         <div class="header-actions">
           
-          <button type="button" class="editorial-btn" onclick="app.goBackToLanding()" id="btn-mode-indicator">
-            <span id="active-mode-label">🧠 Check Your Ball Knowledge</span>
-            <i data-lucide="chevron-down" style="width:13px; height:13px; color:var(--terracotta);"></i>
+          <button type="button" class="editorial-btn" onclick="app.goBackToLanding()" id="btn-mode-indicator" title="Switch Game Mode">
+            <span id="active-mode-label">🧠 Ball Knowledge</span>
+            <i data-lucide="home" style="width:13px; height:13px; color:var(--terracotta);"></i>
           </button>
 
-          <!-- Step / Counter Pill -->
+          <!-- Step & Prize Pill -->
           <div class="step-counter-pill" id="step-counter-pill">
-            Question 1 • Prize: $100
+            Q1 • Prize: $100
           </div>
+
+          <!-- Live 30s Shot Clock Pill -->
+          <div class="step-counter-pill clock-pill" id="shot-clock-pill">
+            <i data-lucide="timer" style="width:13px; height:13px;" id="clock-icon"></i>
+            <span id="shot-clock-sec">30s</span>
+          </div>
+
+          <!-- On-demand Ladder Button -->
+          <button type="button" class="editorial-btn" onclick="app.openLadderModal()" id="btn-header-ladder" title="View Prize Ladder">
+            <span>📊</span>
+            <span class="hidden sm:inline">Ladder</span>
+          </button>
 
           <button type="button" class="editorial-btn" onclick="app.toggleSound()" id="btn-sound" title="Toggle Sound">
             <i data-lucide="volume-2" style="width:14px; height:14px; color:var(--teal-primary);" id="icon-sound"></i>
@@ -194,12 +206,12 @@
 
           <button type="button" class="editorial-btn" onclick="app.openLeaderboardModal()" title="Global Standings">
             <i data-lucide="award" style="width:14px; height:14px; color:var(--terracotta);"></i>
-            <span class="hidden sm:inline">Leaderboard</span>
+            <span class="hidden sm:inline">Standings</span>
           </button>
         </div>
       </div>
 
-      <!-- Full-Width 8px Progress Bar with Teal Fill -->
+      <!-- Full-Width Progress Bar with Teal Fill -->
       <div class="progress-track">
         <div class="progress-fill" id="progress-bar-fill" style="width: 5%;"></div>
       </div>
@@ -227,7 +239,7 @@
         </p>
       </div>
 
-      <!-- Lifelines Bar: 50:50, Ask Fans, Freeze Time, Walk Away -->
+      <!-- Lifelines Bar: 50:50, Ask Fans, Freeze Time, Ladder Modal, Walk Away -->
       <div class="editorial-lifelines-bar">
         <button type="button" class="lifeline-pill" id="btn-ll-5050" onclick="app.useLifeline5050()">
           <span>🎯</span>
@@ -240,6 +252,10 @@
         <button type="button" class="lifeline-pill" id="btn-ll-freeze" onclick="app.useLifelineFreeze()">
           <span>⏱️</span>
           <span>Freeze (+15s)</span>
+        </button>
+        <button type="button" class="lifeline-pill" id="btn-ll-ladder" onclick="app.openLadderModal()">
+          <span>📊</span>
+          <span>Prize Ladder</span>
         </button>
         <button type="button" class="lifeline-pill" id="btn-walk-away" onclick="app.walkAwayAndBank()" style="color:var(--terracotta); border-color:rgba(216,90,48,0.25);">
           <span>💼</span>
@@ -306,13 +322,33 @@
 
   </div>
 
-  <!-- 3. BALL KNOWLEDGE FLOATING MONEY LADDER DRAWER -->
-  <aside class="money-ladder-drawer" id="money-ladder-drawer">
-    <div class="ladder-header">🧠 PRIZE LADDER</div>
-    <div id="ladder-rungs-list">
-      <!-- Dynamically generated rungs -->
+  <!-- ============================================================ -->
+  <!-- 3. PRIZE LADDER MODAL (On-Demand Overlay, NEVER floating) -->
+  <!-- ============================================================ -->
+  <div class="fan-poll-modal" id="modal-ladder" style="display:none;" onclick="if(event.target === this) app.closeLadderModal()">
+    <div class="fan-poll-box" style="max-width:440px; text-align:left; max-height:85vh; display:flex; flex-direction:column; padding:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px solid var(--border-soft); padding-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px;">🧠</span>
+          <div>
+            <h3 class="serif-heading" style="font-size:20px; line-height:1.2;">Prize Ladder</h3>
+            <div style="font-size:11px; color:var(--graphite-60); font-weight:600;">Safety checkpoints every 5 questions</div>
+          </div>
+        </div>
+        <button type="button" class="editorial-btn" onclick="app.closeLadderModal()" style="padding:4px 10px;">✕</button>
+      </div>
+
+      <div id="ladder-rungs-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;">
+        <!-- Dynamically generated rungs -->
+      </div>
+
+      <div style="margin-top:14px; padding-top:10px; border-top:1px solid var(--border-soft);">
+        <button type="button" class="editorial-btn editorial-btn-primary" style="width:100%; justify-content:center; padding:10px;" onclick="app.closeLadderModal()">
+          <span>Back to Match</span>
+        </button>
+      </div>
     </div>
-  </aside>
+  </div>
 
   <!-- 4. DEDICATED LOADING TRANSITION SCREEN -->
   <div class="loading-transition-screen" id="loading-screen">
@@ -424,7 +460,7 @@
           </button>
           <button type="button" class="editorial-btn" onclick="app.goBackToLanding()">
             <i data-lucide="home" style="width:14px; height:14px;"></i>
-            <span>Home</span>
+            <span>Main Menu</span>
           </button>
         </div>
 
