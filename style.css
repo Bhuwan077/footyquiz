@@ -1,0 +1,511 @@
+/* =========================================================
+   FOOTYQUIZ PRO - 3D LIQUID GLASS PHONE SPECIFICATION
+   ========================================================= */
+
+@font-face {
+  font-family: "Helvetica Now Var";
+  src: url("https://db.onlinewebfonts.com/t/e66905e07608167a84e6ad52f638c3c6.woff2") format("woff2"),
+       url("https://db.onlinewebfonts.com/t/e66905e07608167a84e6ad52f638c3c6.woff") format("woff");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-primary: "Helvetica Now Var", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: #0b0f19;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+  position: relative;
+  perspective: 1200px;
+}
+
+/* Page Background Ambient Lighting */
+.page-bg-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.page-bg-ambient .glow-1 {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0, 245, 155, 0.18) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
+  filter: blur(80px);
+}
+
+.page-bg-ambient .glow-2 {
+  position: absolute;
+  bottom: 0%;
+  left: 20%;
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 60%);
+  filter: blur(100px);
+}
+
+/* 3D Phone Perspective Container */
+.phone-perspective-stage {
+  perspective: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  width: 100%;
+  z-index: 10;
+}
+
+/* Realistic Phone Frame Mockup (375px wide x 780px tall) */
+.phone-frame {
+  width: 375px;
+  height: 780px;
+  border-radius: 52px;
+  background-color: #8a9aaa;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 0 10px #1a1a1e,
+    0 0 0 11px rgba(255, 255, 255, 0.06),
+    0 0 60px rgba(0, 0, 0, 0.5);
+  transition: transform 0.12s ease-out, box-shadow 0.25s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* 3D Glare Reflection across Glass */
+.phone-glare-reflection {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 52px;
+  z-index: 45;
+  background: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 55%);
+  mix-blend-mode: overlay;
+  transition: opacity 0.3s ease;
+}
+
+/* Full-Bleed Background inside Phone */
+.phone-bg-bleed {
+  position: absolute;
+  inset: 0;
+  background-image: url('https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260704_143500_a76b8e64-2c69-4683-80e7-2bb060a921d6.png&w=1280&q=85'),
+                    radial-gradient(circle at 50% 30%, #1e3a4c 0%, #0d1a26 100%);
+  background-size: cover;
+  background-position: center;
+  filter: blur(12px);
+  transform: scale(1.1);
+  z-index: 1;
+}
+
+.phone-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: #8a9aaa;
+  opacity: 0.30;
+  z-index: 2;
+}
+
+/* Black Pill-Shaped Dynamic Island (120px wide, 32px tall) */
+.dynamic-island {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: #000000;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.dynamic-island:hover {
+  width: 160px;
+}
+
+.dynamic-island.expanded {
+  width: 320px;
+  height: 84px;
+  border-radius: 28px;
+  padding: 14px 18px;
+}
+
+/* Three.js 3D Floating Soccer Ball Canvas */
+#three-canvas-container {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* Phone Screen Content Layout */
+.phone-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 56px 24px 24px 24px;
+  color: #ffffff;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for clean device appearance */
+.phone-content::-webkit-scrollbar {
+  display: none;
+}
+.phone-content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 1. Header Badge Pill */
+.header-badge-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 9999px;
+  margin-bottom: 24px;
+  cursor: pointer;
+}
+
+/* 2. Title Section */
+.title-section {
+  margin-bottom: 24px;
+}
+
+.quiz-subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 400;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.quiz-heading {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+  min-height: 58px;
+}
+
+/* 3. Selection Grid (2 columns, 12px gap) */
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  flex: 1;
+  align-content: start;
+}
+
+/* Selection Cards (rounded-[32px], 100px height, padding 16px) */
+.quiz-card {
+  height: 102px;
+  border-radius: 32px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: left;
+  user-select: none;
+  cursor: pointer;
+  outline: none;
+  transform-style: preserve-3d;
+}
+
+.quiz-card-number {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.quiz-card-text {
+  color: #ffffff;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* =========================================================
+   LIQUID GLASS CSS SPECIFICATION (Exact Mask-Composite Exclude)
+   ========================================================= */
+
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg, 
+    rgba(255, 255, 255, 0.45) 0%, 
+    rgba(255, 255, 255, 0.15) 20%, 
+    rgba(255, 255, 255, 0) 40%, 
+    rgba(255, 255, 255, 0) 60%, 
+    rgba(255, 255, 255, 0.15) 80%, 
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.liquid-glass-selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+.liquid-glass-selected::before {
+  background: linear-gradient(
+    180deg, 
+    rgba(255, 255, 255, 0.6) 0%, 
+    rgba(255, 255, 255, 0.25) 20%, 
+    rgba(255, 255, 255, 0) 40%, 
+    rgba(255, 255, 255, 0) 60%, 
+    rgba(255, 255, 255, 0.25) 80%, 
+    rgba(255, 255, 255, 0.6) 100%
+  ) !important;
+}
+
+/* Liquid Glass Correct (Emerald Glow) */
+.liquid-glass-correct {
+  background: rgba(16, 185, 129, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 0 24px rgba(16, 185, 129, 0.4) !important;
+}
+.liquid-glass-correct::before {
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.9) 0%, rgba(16, 185, 129, 0.4) 100%) !important;
+}
+
+/* Liquid Glass Wrong (Red Rose Glow) */
+.liquid-glass-wrong {
+  background: rgba(239, 68, 68, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 0 20px rgba(239, 68, 68, 0.35) !important;
+}
+.liquid-glass-wrong::before {
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.9) 0%, rgba(239, 68, 68, 0.4) 100%) !important;
+}
+
+/* 4. Voice / Stadium Sound Button */
+.voice-button-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 18px 0;
+  position: relative;
+}
+
+.voice-radial-glow {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(220, 200, 80, 0.5) 0%, rgba(180, 160, 40, 0.2) 40%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.voice-btn-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.voice-btn-circle:hover {
+  transform: scale(1.06);
+}
+
+.voice-btn-circle:active {
+  transform: scale(0.96);
+}
+
+.voice-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 6px;
+  position: relative;
+  z-index: 2;
+  letter-spacing: 0.02em;
+}
+
+/* 5. Slide-to-Confirm & Quick Confirm Button */
+.slide-track {
+  width: 100%;
+  height: 56px;
+  border-radius: 9999px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+}
+
+.slide-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 10;
+  cursor: grab;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  touch-action: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.slide-thumb:active {
+  cursor: grabbing;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.slide-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  text-align: center;
+  pointer-events: none;
+  letter-spacing: -0.01em;
+}
+
+.slide-chevrons {
+  position: absolute;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+/* Staggered Fade Up Animations */
+@keyframes fadeUpAnim {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade-up {
+  opacity: 0;
+  animation: fadeUpAnim 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.anim-delay-header { animation-delay: 0.1s; }
+.anim-delay-title  { animation-delay: 0.25s; }
+.anim-delay-card-1 { animation-delay: 0.4s; }
+.anim-delay-card-2 { animation-delay: 0.48s; }
+.anim-delay-card-3 { animation-delay: 0.56s; }
+.anim-delay-card-4 { animation-delay: 0.64s; }
+.anim-delay-voice  { animation-delay: 0.7s; }
+.anim-delay-slider { animation-delay: 0.85s; }
+
+/* Control Bar Below Phone */
+.footer-controls {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+}
+
+.control-pill {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
