@@ -171,6 +171,30 @@ class FootyEditorialApp {
     });
   }
 
+  startBallKnowledgeDirectly() {
+    this.currentMode = 'ballknowledge';
+    this.playTone(659.25, 'triangle', 0.15, 0.2);
+    this.showQuizView();
+    this.startQuizSession();
+  }
+
+  startCustomMatchDirectly(diff = 'Very Easy', comp = 'all') {
+    this.currentMode = 'custom';
+    this.customDifficulty = diff;
+    if (comp) this.customCompetition = comp;
+    this.playTone(659.25, 'triangle', 0.15, 0.2);
+    this.showQuizView();
+    this.startQuizSession();
+  }
+
+  toggleCustomModePanel() {
+    const settings = document.getElementById('landing-custom-settings');
+    if (settings) {
+      settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
+      this.playTone(520, 'sine', 0.05, 0.1);
+    }
+  }
+
   startFromLanding() {
     this.showQuizView();
     this.startQuizSession();

@@ -42,24 +42,30 @@
         <p class="landing-subtitle">
           The ultimate football knowledge arena. Test your expertise across 6 major competitions with curated questions spanning every era of the beautiful game.
         </p>
+
+        <!-- Direct Instant Kick-Off Button -->
+        <button type="button" class="hero-quick-play-btn" onclick="app.startBallKnowledgeDirectly()">
+          <span>▶</span>
+          <span>Kick Off Ball Knowledge (Instant Play)</span>
+        </button>
       </div>
 
-      <!-- Game Mode Cards -->
+      <!-- Game Mode Cards (Direct 1-Click Launch) -->
       <div class="landing-modes-section">
         <div class="landing-section-label">
           <i data-lucide="gamepad-2" style="width:14px; height:14px;"></i>
-          <span>SELECT YOUR GAME MODE</span>
+          <span>CHOOSE GAME MODE TO PLAY</span>
         </div>
 
-        <!-- Mode Card 1: Check Your Ball Knowledge (Endless) -->
-        <button type="button" class="landing-mode-card" id="landing-mode-ballknowledge" onclick="app.selectLandingMode('ballknowledge')">
+        <!-- Mode Card 1: Check Your Ball Knowledge (Direct 1-Click Launch) -->
+        <button type="button" class="landing-mode-card" id="landing-mode-ballknowledge" onclick="app.startBallKnowledgeDirectly()">
           <div class="mode-card-icon-ring mode-card-icon-teal">
             <span style="font-size:28px;">🧠</span>
           </div>
           <div class="mode-card-content">
             <div class="mode-card-title-row">
               <span class="mode-card-title">Check Your Ball Knowledge</span>
-              <span class="mode-badge mode-badge-endless">POPULAR • ENDLESS</span>
+              <span class="play-now-pill">PLAY NOW ▶</span>
             </div>
             <p class="mode-card-desc">
               Unlimited random questions from Easy to Elite. Scale your cash bank from $100 up to $10,000,000+. Safety checkpoints every 5 questions lock in your earnings. Walk away anytime or risk it all.
@@ -75,8 +81,8 @@
           </div>
         </button>
 
-        <!-- Mode Card 2: Custom Match (Choose Difficulty) -->
-        <button type="button" class="landing-mode-card" id="landing-mode-custom" onclick="app.selectLandingMode('custom')">
+        <!-- Mode Card 2: Custom Match (Click opens custom tier launcher) -->
+        <div class="landing-mode-card" id="landing-mode-custom" onclick="app.toggleCustomModePanel()">
           <div class="mode-card-icon-ring mode-card-icon-terracotta">
             <span style="font-size:28px;">🎯</span>
           </div>
@@ -86,43 +92,34 @@
               <span class="mode-badge mode-badge-sprint">10 QUESTIONS</span>
             </div>
             <p class="mode-card-desc">
-              Pick your preferred difficulty tier and league competition. A focused 10-question sprint to prove your specialized football knowledge.
+              Choose your difficulty below to start a 10-question sprint immediately:
             </p>
-            <div class="mode-card-tags">
-              <span class="mode-tag">🎚️ Choose Tier</span>
-              <span class="mode-tag">🏟️ League Filter</span>
-              <span class="mode-tag">🏁 Rapid Match</span>
+            <div class="config-pills" style="margin-top:8px;">
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Very Easy')">🟢 Very Easy</button>
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Easy')">🔵 Easy</button>
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Medium')">🟡 Medium</button>
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Hard')">🟠 Hard</button>
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Very Hard')">🔴 Very Hard</button>
+              <button type="button" class="config-pill" onclick="event.stopPropagation(); app.startCustomMatchDirectly('Elite')">👑 Elite</button>
             </div>
           </div>
           <div class="mode-card-arrow">
-            <i data-lucide="arrow-right" style="width:20px; height:20px;"></i>
+            <i data-lucide="chevron-down" style="width:20px; height:20px;"></i>
           </div>
-        </button>
+        </div>
       </div>
 
-      <!-- Custom Match Settings Panel (hidden until custom is selected) -->
+      <!-- Optional League Filter Panel (Toggled on demand) -->
       <div class="landing-custom-settings" id="landing-custom-settings" style="display:none;">
         <div class="landing-section-label" style="margin-bottom:12px;">
           <i data-lucide="sliders-horizontal" style="width:14px; height:14px;"></i>
-          <span>CONFIGURE YOUR MATCH</span>
+          <span>FILTER CUSTOM COMPETITION</span>
         </div>
 
         <div class="custom-config-group">
-          <div class="config-group-label">Difficulty Tier</div>
-          <div class="config-pills" id="landing-pills-diff">
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Very Easy')">🟢 Very Easy</button>
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Easy')">🔵 Easy</button>
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Medium')">🟡 Medium</button>
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Hard')">🟠 Hard</button>
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Very Hard')">🔴 Very Hard</button>
-            <button type="button" class="config-pill" onclick="app.setLandingDifficulty('Elite')">👑 Elite</button>
-          </div>
-        </div>
-
-        <div class="custom-config-group">
-          <div class="config-group-label">Competition</div>
+          <div class="config-group-label">League / Tournament</div>
           <div class="config-pills" id="landing-pills-comp">
-            <button type="button" class="config-pill" onclick="app.setLandingCompetition('all')">🌍 All Leagues</button>
+            <button type="button" class="config-pill active" onclick="app.setLandingCompetition('all')">🌍 All Leagues</button>
             <button type="button" class="config-pill" onclick="app.setLandingCompetition('FIFA World Cup')">🏆 World Cup</button>
             <button type="button" class="config-pill" onclick="app.setLandingCompetition('Premier League')">🦁 Premier League</button>
             <button type="button" class="config-pill" onclick="app.setLandingCompetition('La Liga')">🇪🇸 La Liga</button>
@@ -133,9 +130,9 @@
         </div>
       </div>
 
-      <!-- Start Button -->
-      <button type="button" class="landing-start-btn" id="landing-start-btn" onclick="app.startFromLanding()">
-        <span id="landing-start-text">Kick Off Match</span>
+      <!-- Start Button (Direct 1-Click Launch) -->
+      <button type="button" class="landing-start-btn" id="landing-start-btn" onclick="app.startBallKnowledgeDirectly()">
+        <span id="landing-start-text">▶ Start Ball Knowledge Match (10,000 Questions)</span>
         <i data-lucide="zap" style="width:18px; height:18px;"></i>
       </button>
 

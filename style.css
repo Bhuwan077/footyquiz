@@ -1232,6 +1232,50 @@ h1, h2, h3, .serif-heading {
   color: var(--terracotta);
 }
 
+.play-now-pill {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  background-color: var(--teal-primary);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(15, 110, 86, 0.25);
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.landing-mode-card:hover .play-now-pill {
+  background-color: var(--terracotta);
+  transform: translateX(4px);
+  box-shadow: 0 4px 14px rgba(216, 90, 48, 0.35);
+}
+
+.hero-quick-play-btn {
+  margin-top: 18px;
+  padding: 14px 28px;
+  border-radius: 9999px;
+  background: var(--teal-primary);
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(15, 110, 86, 0.25);
+  transition: all 0.25s var(--ease-organic);
+}
+
+.hero-quick-play-btn:hover {
+  background: var(--terracotta);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(216, 90, 48, 0.35);
+}
+
 .mode-card-desc {
   font-size: 13px;
   color: var(--graphite-60);
